@@ -29,6 +29,10 @@ typedef struct {
 typedef struct {
     rgba *data;
     char *dirty;
+    struct {
+        int minx, maxx, miny, maxy;
+    } dirty_box;
+    int zindex;
     size_t width;
     size_t height;
 } fb_t;
@@ -40,9 +44,15 @@ typedef struct {
     int channels;
 } texture;
 
+typedef void (*resize_callback_t)(int, int);
+typedef void (*finish_resize_callback_t)(int, int);
+typedef void (*keydown_callback_t)(void);
+typedef void (*keyup_callback_t)(void);
+
 /* Core */
 void init_window(int width, int height, char *title);
 fb_t *get_framebuffer();
+void swap_buffers();
 void update_framebuffer();
 int window_should_close();
 void poll_events();
@@ -54,6 +64,7 @@ void sync_frames_end();
 float get_deltatime();
 void framebuffer_free(fb_t *fb);
 void set_resize_callback(void (*resize_callback)(int, int));
+void set_finish_resize_callback(void (*finish_resize_callback)(int, int));
 
 /* Primitive Rendering */
 void set_pixel(fb_t *fb, size_t x, size_t y, rgba color);
@@ -83,6 +94,8 @@ int is_key_down(int keycode);
 int is_key_up(int keycode);
 int is_some_key_down();
 int is_some_key_up();
+void set_keydown_callback(keydown_callback_t keydown_callback);
+void set_keyup_callback(keyup_callback_t keyup_callback);
 
 /* From https://boredzo.org/blog/archives/2007-05-22/virtual-key-codes */
 #define KEY_A 0

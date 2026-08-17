@@ -64,9 +64,19 @@ void set_pixel(fb_t *fb, size_t x, size_t y, rgba color) {
         return;
 
     size_t i = x + fb->width * y;
-
     if (!rgba_equal(fb->data[i], color)) {
         fb->dirty[i] = 1;
+        if (x < fb->dirty_box.minx) {
+            fb->dirty_box.minx = x;
+        } else if (x > fb->dirty_box.maxx) {
+            fb->dirty_box.maxx = x;
+        }
+
+        if (y < fb->dirty_box.miny) {
+            fb->dirty_box.miny = y;
+        } else if (y > fb->dirty_box.maxy) {
+            fb->dirty_box.maxy = y;
+        }
         fb->data[i] = color;
     }
 }
