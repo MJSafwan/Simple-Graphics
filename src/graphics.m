@@ -15,6 +15,9 @@
 @interface window_controller : NSWindowController <NSWindowDelegate>
 @end
 
+@interface app_delegate: NSObject <NSApplicationDelegate>
+@end
+
 struct {
     /* Platform specific */
     NSWindow *window;
@@ -23,14 +26,26 @@ struct {
     NSBitmapImageRep *reps;
 
     fb_t framebuffer;
-    regions_t regions;
     int current_buffer;
     FT_Library freetype;
     int width;
     int height;
     int window_should_close;
     char *title;
+
+    struct {
+        void (*resize_callback)(int, int);
+    } callbacks;
+
+    struct {
+        char type[255];
+        char keycode[255];
+    } events;
 } core = {0};
+
+void set_resize_callback(void (*resize_callback)(int, int)) {
+    core.callbacks.resize_callback = resize_callback;
+}
 
 FT_Library get_freetype() {
     return core.freetype;
@@ -39,42 +54,88 @@ FT_Library get_freetype() {
 void make_window(void) {
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-
+    app_delegate *del = [[app_delegate alloc] init];
+    assert(del);
+    [NSApp setDelegate: del];
 
     core.window = [[NSWindow alloc] initWithContentRect: NSMakeRect(0, 0, core.width, core.height)
                                          styleMask: NSWindowStyleMaskTitled|
-                                                    NSWindowStyleMaskClosable
+                                                    NSWindowStyleMaskClosable|
+                                                    NSWindowStyleMaskResizable|
+                                                    NSWindowStyleMaskMiniaturizable
                                          backing: NSBackingStoreBuffered
                                          defer: NO]; 
 
     [core.window setTitle: @(core.title)];
+    core.window.opaque = true;
     core.window.delegate = [[window_controller alloc] init];
+    core.window.preservesContentDuringLiveResize = false;
 
-    core.framebuffer = make_framebuffer(core.width, core.height);
-    // todo: make dim of regions based on screen res
-    core.regions.dim = (Vector2){core.width/10, core.height/10};
-    core.regions.items = malloc(core.regions.dim.x*core.regions.dim.y);
-    memset(core.regions.items, 0, core.regions.dim.x*core.regions.dim.y);
-    core.framebuffer.regions = &core.regions;
 
-    core.view = [[window_view alloc] initWithFrame:((NSView *)[core.window contentView]).bounds];
+    core.framebuffer = make_framebuffer(3000, 3000);
+    core.framebuffer.width = core.width;
+    core.framebuffer.height = core.height;
+
+    core.view = [[window_view alloc] initWithFrame: NSMakeRect(0, 0, core.width, core.height)];
     [core.window setContentView:core.view];
 }
 
+@implementation app_delegate
+- (void)applicationDidFinishLaunching:(NSNotification *)notification {
+    [NSApp stop: nil];
+}
+
+@end
 
 @implementation window_controller
-
 
 - (void)windowWillClose: (NSNotification *)notification {
     core.window_should_close = 1;
 }
-
-- (NSSize)windowWillResize: (NSWindow *)win toSize: (NSSize) size {
-    return size;
+- (void) windowDidEndLiveResize:(NSNotification *) notification {
+    core.framebuffer.width = core.width;
+    core.framebuffer.height = core.height;
 }
 
-- (void)windowDidResize: (NSNotification *)notification {
-    return;    
+- (NSSize)windowWillResize: (NSWindow *)win toSize: (NSSize) size {
+    core.width = size.width;
+    core.height = size.height;
+
+    core.framebuffer.width = core.width;
+    core.framebuffer.height = core.height;
+
+    for (int y = 0; y < core.framebuffer.height; ++y) {
+        for (int x = 0; x < core.framebuffer.width; ++x) {
+            core.framebuffer.dirty[x + y*core.framebuffer.width] = 1;
+            core.framebuffer.data[x + y*core.framebuffer.width] = (rgba){0, 0, 0, 255};
+        }
+    }
+
+    [core.view release];
+    core.view = [[window_view alloc] initWithFrame: NSMakeRect(0, 0, core.width, core.height)];
+    [core.window setContentView:core.view];
+
+    [core.image release];
+    core.image = [[NSImage alloc]initWithSize: size];
+    core.reps = [[NSBitmapImageRep alloc]
+        initWithBitmapDataPlanes: NULL
+                      pixelsWide: core.width
+                      pixelsHigh: core.height
+                   bitsPerSample: sizeof(char) * 8
+                 samplesPerPixel: sizeof(rgba)
+                        hasAlpha: YES
+                        isPlanar: NO
+                  colorSpaceName: NSDeviceRGBColorSpace
+                     bytesPerRow: 0
+                    bitsPerPixel: 0
+    ];
+    [core.image addRepresentation: core.reps];
+
+    if (core.callbacks.resize_callback) {
+        core.callbacks.resize_callback(size.width, size.height);
+    }
+    update_framebuffer();
+    return size;
 }
 
 @end
@@ -87,10 +148,34 @@ void make_window(void) {
 
 - (void)drawRect:(NSRect)dirtyRect {
     [super drawRect: dirtyRect];
-    [core.image drawInRect: self.bounds];
+    [core.image drawInRect: dirtyRect];
+}
+
+- (BOOL) performKeyEquivalent:(NSEvent *) event {
+    return YES;
 }
 
 @end
+
+int is_key_down(int keycode) {
+    return core.events.type[NSEventTypeKeyDown] && core.events.keycode[keycode]; 
+}
+
+int is_some_key_down() {
+    return core.events.type[NSEventTypeKeyDown];
+}
+
+int is_some_key_up() {
+    return core.events.type[NSEventTypeKeyUp];
+}
+
+int is_key_up(int keycode) {
+    return core.events.type[NSEventTypeKeyUp] && core.events.keycode[keycode]; 
+}
+
+int is_being_resized() {
+    return core.window.inLiveResize;
+}
 
 void init_window(int width, int height, char *title) {
     core.width = width;
@@ -110,8 +195,8 @@ void init_window(int width, int height, char *title) {
                         hasAlpha: YES
                         isPlanar: NO
                   colorSpaceName: NSDeviceRGBColorSpace
-                     bytesPerRow: core.width * sizeof(rgba)
-                    bitsPerPixel: sizeof(rgba)*8
+                     bytesPerRow: 0
+                    bitsPerPixel: 0
     ];
 
     assert(reps);
@@ -119,7 +204,10 @@ void init_window(int width, int height, char *title) {
     [core.image addRepresentation: reps];
     make_window();
     [core.window makeKeyAndOrderFront:nil];
+
     [NSApp activateIgnoringOtherApps:YES];
+    if (![[NSRunningApplication currentApplication] isFinishedLaunching])
+        [NSApp run];
 }
 
 fb_t *get_framebuffer() {
@@ -133,36 +221,28 @@ int window_should_close() {
 void update_framebuffer() {
     fb_t *fb = get_framebuffer();
     NSUInteger vals[4] = {0};
-    int rx = (fb->width/core.regions.dim.x);
-    int ry = (fb->height/core.regions.dim.y);
 
-    for (int p = 0; p < core.regions.dim.y; ++p) {
-        for (int q = 0; q < core.regions.dim.x; ++q) {
-            int ri = q + p * core.regions.dim.x;
-            if (!core.regions.items[ri])
+    for (int y = 0; y < fb->height; ++y) {
+        for (int x = 0; x < fb->width; ++x) {
+            int i = x + fb->width * y;
+            if (!fb->dirty[i])
                 continue;
-            core.regions.items[ri] = 0;
-            for (int y = 0; y < ry; ++y) {
-                for (int x = 0; x < rx; ++x) {
-                    int tx = q * rx + x;
-                    int ty = p * ry + y;
-                    int i = tx + fb->width * ty;
-                    if (!fb->dirty[i])
-                        continue;
-                    fb->dirty[i] = 0;
-                    vals[0] = fb->data[i].r;
-                    vals[1] = fb->data[i].g;
-                    vals[2] = fb->data[i].b;
-                    vals[3] = fb->data[i].a;
-                    [core.reps setPixel: vals atX:tx y:ty];
-                }
-            }
+            fb->dirty[i] = 0;
+            vals[0] = fb->data[i].r;
+            vals[1] = fb->data[i].g;
+            vals[2] = fb->data[i].b;
+            vals[3] = fb->data[i].a;
+            [core.reps setPixel: vals atX:x y:y];
         }
     }
     [core.view updateFramebuffer];
 }
 
+extern float dt;
+
 void poll_events() {
+    memset(&core.events, 0, sizeof(core.events));
+    printf("dt = %f\n", dt);
     @autoreleasepool {
         for (;;) {
             NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
@@ -172,21 +252,25 @@ void poll_events() {
             if (event == nil)
                 break;
 
+            core.events.type[event.type] = 1;
+            if (event.type == NSEventTypeKeyDown ||
+                event.type == NSEventTypeKeyUp) {
+                if (event.ARepeat)
+                    continue;
+                core.events.keycode[event.keyCode] = 1;
+            }
             [NSApp sendEvent:event];
         }
     } 
-}
-
-int get_window_height() {
-    return core.height;
-}
-
-int get_window_width() {
-    return core.width;
 }
 
 void close_window() {
     FT_Done_FreeType(core.freetype);
     framebuffer_free(&core.framebuffer);
     [core.window close];
+
+    [core.window release];
+    [core.view release];
+    [core.image release];
+    [core.reps release];
 }

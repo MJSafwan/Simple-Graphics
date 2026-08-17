@@ -11,7 +11,7 @@
 #define EMPTY (rgba){0, 0, 0, 0}
 
 static struct timespec st, et = {0};
-static float dt = 0.33f;
+float dt = 0.33f;
 
 void sync_frames_start() {
     clock_gettime(CLOCK_MONOTONIC, &st);
@@ -38,11 +38,11 @@ rgba get_pixel(fb_t *fb, int x, int y) {
         return EMPTY;
     if (x >= fb->width || y >= fb->height)
         return EMPTY;
-    int i = x + fb->height * y;
+    int i = x + fb->width * y;
     return fb->data[i];
 }
 
-fb_t make_framebuffer(int width, int height) {
+fb_t make_framebuffer(size_t width, size_t height) {
     fb_t bgfb = {0};
     bgfb.data = malloc(width * height * sizeof(rgba));
     memset(bgfb.data, 0, sizeof(rgba)*width * height);
@@ -62,18 +62,13 @@ void set_pixel(fb_t *fb, size_t x, size_t y, rgba color) {
         return;
     if (x >= fb->width || y >= fb->height)
         return;
+
     size_t i = x + fb->width * y;
 
     if (!rgba_equal(fb->data[i], color)) {
         fb->dirty[i] = 1;
-        if (fb->regions != NULL) {
-            int nx = x * ((float)fb->regions->dim.x/(float)fb->width);
-            int ny = y * ((float)fb->regions->dim.y/(float)fb->height);
-            int p = nx + fb->regions->dim.x * ny;
-            fb->regions->items[p] = 1;
-        }
+        fb->data[i] = color;
     }
-    fb->data[i] = color;
 }
 
 void fbcpy(fb_t *dst, fb_t *src, Vector2 off) {
@@ -86,7 +81,7 @@ void fbcpy(fb_t *dst, fb_t *src, Vector2 off) {
 
 void fill_background(fb_t *fb, rgba color) {
     for (int y = 0; y < fb->height; y++) {
-        for (int x = 0; x < fb->height; ++x) {
+        for (int x = 0; x < fb->width; ++x) {
             set_pixel(fb, x, y, color);
         }
     }
