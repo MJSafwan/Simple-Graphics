@@ -1,5 +1,3 @@
-#include "ft2build.h"
-#include FT_FREETYPE_H
 
 #ifndef GRAPHICS_H_
 #define GRAPHICS_H_
@@ -22,9 +20,7 @@ typedef struct {
     double x, y, z;
 } Vector3;
 
-typedef struct {
-    FT_Face face; 
-} font_ctx;
+typedef void *font_t;
 
 typedef struct {
     rgba *data;
@@ -32,7 +28,8 @@ typedef struct {
     struct {
         int minx, maxx, miny, maxy;
     } dirty_box;
-    int zindex;
+    void *userdata;
+    int zindex; /* todo: implement z-index */
     size_t width;
     size_t height;
 } fb_t;
@@ -48,19 +45,23 @@ typedef void (*resize_callback_t)(int, int);
 typedef void (*finish_resize_callback_t)(int, int);
 typedef void (*keydown_callback_t)(void);
 typedef void (*keyup_callback_t)(void);
+/* todo: mouse callbacks */
 
-/* Core */
+/* platform */
+void init_platform();
+void uninit_platform();
+void update_framebuffer();
+void poll_events();
+void sync_frames_start();
+void sync_frames_end();
+
+/* core */
 void init_window(int width, int height, char *title);
 fb_t *get_framebuffer();
-void swap_buffers();
-void update_framebuffer();
 int window_should_close();
-void poll_events();
 void close_window();
 int rgba_equal(rgba a, rgba b);
 fb_t make_framebuffer(size_t width, size_t height);
-void sync_frames_start();
-void sync_frames_end();
 float get_deltatime();
 void framebuffer_free(fb_t *fb);
 void set_resize_callback(void (*resize_callback)(int, int));
@@ -81,9 +82,11 @@ void fbcpy(fb_t *dst, fb_t *src, Vector2 off);
 void draw_texture_mtx(fb_t *fb, texture t, Vector2 pos, Vector2 scale, Vector3 mtx[3]);
 
 /* Fonts */
-int load_font(char *filename, font_ctx *ctx);
-void display_text(fb_t *fb, font_ctx ctx, char *text, Vector2 pos, rgba color, int pixel_size);
-void font_free(font_ctx ctx);
+void init_font_library();
+void uninit_font_library();
+int load_font(char *filename, font_t *ctx);
+void display_text(fb_t *fb, font_t *ctx, char *text, Vector2 pos, rgba color, int pixel_size);
+void font_free(font_t *ctx);
 
 /* Vector math */
 void mtx_multiply(Vector3 *a, Vector3 *b, Vector3 *res);
@@ -98,6 +101,8 @@ void set_keydown_callback(keydown_callback_t keydown_callback);
 void set_keyup_callback(keyup_callback_t keyup_callback);
 
 /* From https://boredzo.org/blog/archives/2007-05-22/virtual-key-codes */
+/* todo: this is platform specific, so keep a translation table. */
+/*
 #define KEY_A 0
 #define KEY_S 1
 #define KEY_D 2
@@ -158,5 +163,6 @@ void set_keyup_callback(keyup_callback_t keyup_callback);
 #define KEY_DOWN 125
 #define KEY_LEFT 123
 #define KEY_RIGHT 124
+*/
 
 #endif

@@ -1,36 +1,63 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <math.h>
 #include <time.h>
 #include <assert.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include "graphics.h"
+#include "internals.h"
 
 #define EMPTY (rgba){0, 0, 0, 0}
 
-static struct timespec st, et = {0};
-float dt = 0.33f;
+core_t core = {0};
 
-void sync_frames_start() {
-    clock_gettime(CLOCK_MONOTONIC, &st);
+void init_window(int width, int height, char *title) {
+    core.window.width = width;
+    core.window.height = height;
+    core.window.title = title;
+    init_platform();
+    init_font_library();
 }
 
-void sync_frames_end() {
-    clock_gettime(CLOCK_MONOTONIC, &et);
-    int64_t etn = (int64_t)et.tv_sec*1000000000 + (int64_t)et.tv_nsec;
-    int64_t stn = (int64_t)st.tv_sec*1000000000 + (int64_t)st.tv_nsec;
-    dt = (etn-stn)/(1000000000.0);
+void close_window() {
+    /* todo: uninitialize font library */
+    framebuffer_free(&core.window.framebuffer);
+    uninit_platform();
+    uninit_font_library();
+}
+
+void set_resize_callback(resize_callback_t resize_callback) {
+    core.callbacks.resize_callback = resize_callback;
+}
+
+void set_finish_resize_callback(finish_resize_callback_t finish_resize_callback) {
+    core.callbacks.finish_resize_callback = finish_resize_callback;
+}
+
+void set_keydown_callback(keydown_callback_t keydown_callback) {
+    core.callbacks.keydown_callback = keydown_callback;
+}
+
+void set_keyup_callback(keyup_callback_t keyup_callback) {
+    core.callbacks.keyup_callback = keyup_callback;
 }
 
 float get_deltatime() {
-    return dt;
+    return core.dt;
 }
+
 
 void framebuffer_free(fb_t *fb) {
     free(fb->data);
     free(fb->dirty);
+}
+
+fb_t *get_framebuffer() {
+    return &core.window.framebuffer;
+}
+
+int window_should_close() {
+    return core.window.window_should_close;
 }
 
 rgba get_pixel(fb_t *fb, int x, int y) {
