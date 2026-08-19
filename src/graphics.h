@@ -13,11 +13,11 @@ typedef struct {
 } rgba;
 
 typedef struct {
-    double x, y;
+    float x, y;
 } Vector2;
 
 typedef struct {
-    double x, y, z;
+    float x, y, z;
 } Vector3;
 
 typedef void *font_t;
@@ -30,8 +30,8 @@ typedef struct {
     } dirty_box;
     void *userdata;
     int zindex; /* todo: implement z-index */
-    size_t width;
-    size_t height;
+    int width;
+    int height;
 } fb_t;
 
 typedef struct {
@@ -61,14 +61,14 @@ fb_t *get_framebuffer();
 int window_should_close();
 void close_window();
 int rgba_equal(rgba a, rgba b);
-fb_t make_framebuffer(size_t width, size_t height);
+fb_t make_framebuffer(int width, int height);
 float get_deltatime();
 void framebuffer_free(fb_t *fb);
 void set_resize_callback(void (*resize_callback)(int, int));
 void set_finish_resize_callback(void (*finish_resize_callback)(int, int));
 
 /* Primitive Rendering */
-void set_pixel(fb_t *fb, size_t x, size_t y, rgba color);
+void set_pixel(fb_t *fb, int x, int y, rgba color);
 rgba get_pixel(fb_t *fb, int x, int y);
 void fill_background(fb_t *fb, rgba color);
 void draw_line(fb_t *fb, Vector2 initial, Vector2 final, int thick, rgba color);
@@ -102,67 +102,67 @@ void set_keyup_callback(keyup_callback_t keyup_callback);
 
 /* From https://boredzo.org/blog/archives/2007-05-22/virtual-key-codes */
 /* todo: this is platform specific, so keep a translation table. */
-/*
-#define KEY_A 0
-#define KEY_S 1
-#define KEY_D 2
-#define KEY_F 3
-#define KEY_H 4
-#define KEY_G 5
-#define KEY_Z 6
-#define KEY_X 7
-#define KEY_C 8
-#define KEY_V 9
-#define KEY_B 11
-#define KEY_Q 12
-#define KEY_W 13
-#define KEY_E 14
-#define KEY_R 15
-#define KEY_Y 16
-#define KEY_T 17
-#define KEY_1 18
-#define KEY_2 19
-#define KEY_3 20
-#define KEY_4 21
-#define KEY_6 22
-#define KEY_5 23
-#define KEY_EQUALS 24
-#define KEY_9 25
-#define KEY_7 26
-#define KEY_MINUS 27
-#define KEY_8 28
-#define KEY_0 29
-#define KEY_RIGHTBRACKET 30
-#define KEY_O 31
-#define KEY_U 32
-#define KEY_LEFTBRACKET 33
-#define KEY_I 34
-#define KEY_P 35
-#define KEY_RETURN 36
-#define KEY_L 37
-#define KEY_J 38
-#define KEY_APOSTROPHE 39
-#define KEY_K 40
-#define KEY_SEMICOLON 41
-#define KEY_FRONTSLASH 42
-#define KEY_COMMA 43
-#define KEY_BACKSLASH 44
-#define KEY_N 45
-#define KEY_M 46
-#define KEY_PERIOD 47
-#define KEY_TAB 48
-#define KEY_BACKAPOSTROPHE 50
-#define KEY_DELETE 51
-#define KEY_ESCAPE 53
-#define KEY_COMMAND 55
-#define KEY_SHIFT 56
-#define KEY_CAPSLOCK 57
-#define KEY_OPTION 58
-#define KEY_CONTROL 59
-#define KEY_UP 126
-#define KEY_DOWN 125
-#define KEY_LEFT 123
-#define KEY_RIGHT 124
-*/
+enum {
+    PREFIX_KEY_A = 0,
+    PREFIX_KEY_S = 1,
+    PREFIX_KEY_D = 2,
+    PREFIX_KEY_F = 3,
+    PREFIX_KEY_H = 4,
+    PREFIX_KEY_G = 5,
+    PREFIX_KEY_Z = 6,
+    PREFIX_KEY_X = 7,
+    PREFIX_KEY_C = 8,
+    PREFIX_KEY_V = 9,
+    PREFIX_KEY_B = 11,
+    PREFIX_KEY_Q = 12,
+    PREFIX_KEY_W = 13,
+    PREFIX_KEY_E = 14,
+    PREFIX_KEY_R = 15,
+    PREFIX_KEY_Y = 16,
+    PREFIX_KEY_T = 17,
+    PREFIX_KEY_1 = 18,
+    PREFIX_KEY_2 = 19,
+    PREFIX_KEY_3 = 20,
+    PREFIX_KEY_4 = 21,
+    PREFIX_KEY_6 = 22,
+    PREFIX_KEY_5 = 23,
+    PREFIX_KEY_EQUALS = 24,
+    PREFIX_KEY_9 = 25,
+    PREFIX_KEY_7 = 26,
+    PREFIX_KEY_MINUS = 27,
+    PREFIX_KEY_8 = 28,
+    PREFIX_KEY_0 = 29,
+    PREFIX_KEY_RIGHTBRACKET = 30,
+    PREFIX_KEY_O = 31,
+    PREFIX_KEY_U = 32,
+    PREFIX_KEY_LEFTBRACKET = 33,
+    PREFIX_KEY_I = 34,
+    PREFIX_KEY_P = 35,
+    PREFIX_KEY_RETURN = 36,
+    PREFIX_KEY_L = 37,
+    PREFIX_KEY_J = 38,
+    PREFIX_KEY_APOSTROPHE = 39,
+    PREFIX_KEY_K = 40,
+    PREFIX_KEY_SEMICOLON = 41,
+    PREFIX_KEY_FRONTSLASH = 42,
+    PREFIX_KEY_COMMA = 43,
+    PREFIX_KEY_BACKSLASH = 44,
+    PREFIX_KEY_N = 45,
+    PREFIX_KEY_M = 46,
+    PREFIX_KEY_PERIOD = 47,
+    PREFIX_KEY_TAB = 48,
+    PREFIX_KEY_BACKAPOSTROPHE = 50,
+    PREFIX_KEY_DELETE = 51,
+    PREFIX_KEY_ESCAPE = 53,
+    PREFIX_KEY_COMMAND = 55,
+    PREFIX_KEY_SHIFT = 56,
+    PREFIX_KEY_CAPSLOCK = 57,
+    PREFIX_KEY_OPTION = 58,
+    PREFIX_KEY_CONTROL = 59,
+    PREFIX_KEY_UP = 126,
+    PREFIX_KEY_DOWN = 125,
+    PREFIX_KEY_LEFT = 123,
+    PREFIX_KEY_RIGHT = 124,
+};
 
 #endif

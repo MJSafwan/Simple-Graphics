@@ -1,7 +1,6 @@
 #import <Cocoa/Cocoa.h>
-#import <stdio.h>
-#import <assert.h>
-
+#include <stdlib.h>
+#include <string.h>
 #include "internals.h"
 
 #define PLATFORM_COCOA
@@ -80,10 +79,12 @@ extern core_t core;
 
     [core.window.handle->view release];
     core.window.handle->view = [[window_view alloc] initWithFrame: NSMakeRect(0, 0, core.window.width, core.window.height)];
+    NSCAssert(core.window.handle->view, @"Couldn't allocate an NSView!\n");
     [core.window.handle->window setContentView:core.window.handle->view];
 
     [core.window.handle->image release];
     core.window.handle->image = [[NSImage alloc]initWithSize: size];
+    NSCAssert(core.window.handle->image, @"Couldn't allocate an NSImage!\n");
     core.window.handle->reps = [[NSBitmapImageRep alloc]
         initWithBitmapDataPlanes: NULL
                       pixelsWide: core.window.width
@@ -96,6 +97,7 @@ extern core_t core;
                      bytesPerRow: 0
                     bitsPerPixel: 0
     ];
+    NSCAssert(core.window.handle->reps, @"Couldn't allocate an NSBitmapImageRep!\n");
     [core.window.handle->image addRepresentation: core.window.handle->reps];
 
     if (core.callbacks.resize_callback) {
@@ -128,7 +130,7 @@ static void make_window(void) {
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
     app_delegate *del = [[app_delegate alloc] init];
-    assert(del);
+    NSCAssert(del, @"Couldn't allocate an NSApplicationDelegate!\n");
     [NSApp setDelegate: del];
 
     core.window.handle->window = [[NSWindow alloc] initWithContentRect: NSMakeRect(0, 0, core.window.width, core.window.height)
@@ -139,9 +141,11 @@ static void make_window(void) {
                                          backing: NSBackingStoreBuffered
                                          defer: NO]; 
 
+    NSCAssert(core.window.handle->window, @"Couldn't allocate NSWindow!\n");
     [core.window.handle->window setTitle: @(core.window.title)];
     core.window.handle->window.opaque = true;
     core.window.handle->window.delegate = [[window_controller alloc] init];
+    NSCAssert(core.window.handle->window.delegate, @"Couldn't allocate NSWindowDelegate!\n");
     core.window.handle->window.preservesContentDuringLiveResize = false;
 
     /* todo: change current_screen when screen changes and resize framebuffer */
@@ -151,6 +155,7 @@ static void make_window(void) {
     core.window.framebuffer.height = core.window.height;
 
     core.window.handle->view = [[window_view alloc] initWithFrame: NSMakeRect(0, 0, core.window.width, core.window.height)];
+    NSCAssert(core.window.handle->view, @"Couldn't allocate NSView!");
     [core.window.handle->window setContentView:core.window.handle->view];
 }
 
@@ -158,11 +163,14 @@ static void make_window(void) {
 
 void init_platform() {
     core.window.handle = malloc(sizeof(window_handle_t));
+    NSCAssert(core.window.handle, @"Couldn't allocate window_handle_t!\n");
     core.current_screen = malloc(sizeof(screen_t));
+    NSCAssert(core.current_screen, @"Couldn't allocate screen_t!\n");
     core.timer = malloc(sizeof(timer_t));
+    NSCAssert(core.timer, @"Couldn't allocate timer_t!\n");
 
     core.window.handle->image = [[NSImage alloc]initWithSize: NSMakeSize(core.window.width, core.window.height)];
-    assert(core.window.handle->image);
+    NSCAssert(core.window.handle->image, @"Couldn't allocate NSImage!\n");
 
     NSBitmapImageRep *reps = [[NSBitmapImageRep alloc]
         initWithBitmapDataPlanes: NULL
@@ -176,8 +184,8 @@ void init_platform() {
                      bytesPerRow: 0
                     bitsPerPixel: 0
     ];
+    NSCAssert(reps, @"Couldn't allocate NSBitmapImageRep!\n");
 
-    assert(reps);
     core.window.handle->reps = reps;
     [core.window.handle->image addRepresentation: reps];
     make_window();
@@ -262,5 +270,8 @@ void uninit_platform() {
     [core.window.handle->view release];
     [core.window.handle->image release];
     [core.window.handle->reps release];
+    free(core.window.handle);
+    free(core.timer);
+    free(core.current_screen);
 }
 

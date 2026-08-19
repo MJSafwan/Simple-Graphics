@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <math.h>
-#include <time.h>
 #include <assert.h>
+#include <string.h>
+#include <stdio.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -69,7 +69,7 @@ rgba get_pixel(fb_t *fb, int x, int y) {
     return fb->data[i];
 }
 
-fb_t make_framebuffer(size_t width, size_t height) {
+fb_t make_framebuffer(int width, int height) {
     fb_t bgfb = {0};
     bgfb.data = malloc(width * height * sizeof(rgba));
     memset(bgfb.data, 0, sizeof(rgba)*width * height);
@@ -84,13 +84,13 @@ int rgba_equal(rgba a, rgba b) {
     return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
 }
 
-void set_pixel(fb_t *fb, size_t x, size_t y, rgba color) {
+void set_pixel(fb_t *fb, int x, int y, rgba color) {
     if (x < 0 || y < 0)
         return;
     if (x >= fb->width || y >= fb->height)
         return;
 
-    size_t i = x + fb->width * y;
+    int i = x + fb->width * y;
     if (!rgba_equal(fb->data[i], color)) {
         fb->dirty[i] = 1;
         if (x < fb->dirty_box.minx) {
@@ -142,14 +142,14 @@ void draw_line(fb_t *fb, Vector2 initial, Vector2 final, int thick, rgba color) 
     }
 }
 
-double sign(Vector2 p1, Vector2 p2, Vector2 p3) {
+float sign(Vector2 p1, Vector2 p2, Vector2 p3) {
     return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
 }
 
 int PointInTriangle(Vector2 pt, Vector2 v1, Vector2 v2, Vector2 v3) {
-    double d1 = sign(pt, v1, v2);
-    double d2 = sign(pt, v2, v3);
-    double d3 = sign(pt, v3, v1);
+    float d1 = sign(pt, v1, v2);
+    float d2 = sign(pt, v2, v3);
+    float d3 = sign(pt, v3, v1);
 
     int has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
     int has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
@@ -244,11 +244,11 @@ void draw_texture(fb_t *fb, texture t, Vector2 pos, Vector2 scale) {
     assert(t.channels == 3);
     int i = 0;
     assert(scale.x > 0 && scale.y > 0);
-    for (size_t y = 0; y < t.height * scale.y; ++y) {
-        for (size_t x = 0; x < t.width * scale.x; ++x) {
+    for (int y = 0; y < t.height * scale.y; ++y) {
+        for (int x = 0; x < t.width * scale.x; ++x) {
             int tx = (x / scale.x);
             int ty = (y /scale.y);
-            size_t i = tx + ty * t.width;
+            int i = tx + ty * t.width;
             rgba c = {0};
             c.r = data[i].r;
             c.g = data[i].g;
@@ -264,15 +264,15 @@ void draw_texture_mtx(fb_t *fb, texture t, Vector2 pos, Vector2 scale, Vector3 m
     assert(t.channels == 3);
     int i = 0;
     assert(scale.x > 0 && scale.y > 0);
-    for (double y = 0; y < t.height * scale.y; y+=0.5) {
-        for (double x = 0; x < t.width * scale.x; x+=0.5) {
+    for (float y = 0; y < t.height * scale.y; y+=0.5) {
+        for (float x = 0; x < t.width * scale.x; x+=0.5) {
             int tx = (x / scale.x);
             int ty = (y /scale.y);
 
             int screenx = mtx[0].x * x + mtx[0].y * y + mtx[0].z;
             int screeny = mtx[1].x * x + mtx[1].y * y + mtx[1].z;
 
-            size_t i = tx + ty * t.width;
+            int i = tx + ty * t.width;
             rgba c = {0};
             c.r = data[i].r;
             c.g = data[i].g;
