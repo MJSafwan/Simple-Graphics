@@ -40,6 +40,9 @@ Vector2 get_mouse_pos() {
     return core.events.window_mouse_pos;
 }
 
+void init_font_library();
+void uninit_font_library();
+
 void init_window(int width, int height, char *title) {
     graphics_logf(LOG_INFO, "init_window(width=%d, height=%d, title='%s')\n", width, height, title);
     core.window.width = width;

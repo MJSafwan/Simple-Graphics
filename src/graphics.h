@@ -90,8 +90,6 @@ void fbcpy(fb_t *dst, fb_t *src, Vector2 off);
 void draw_texture_mtx(fb_t *fb, texture t, Vector2 pos, Vector2 scale, Vector3 mtx[3]);
 
 /* Fonts */
-void init_font_library();
-void uninit_font_library();
 int load_font(char *filename, font_t *ctx);
 void display_text(fb_t *fb, font_t *ctx, char *text, Vector2 pos, rgba color, int pixel_size);
 void font_free(font_t *ctx);
@@ -141,6 +139,7 @@ Vector2 get_mouse_pos();
 #define X(a, b) a,
 enum {
    KEYCODEX 
+   PREFIX_KEY_LAST
 };
 #undef X
 
