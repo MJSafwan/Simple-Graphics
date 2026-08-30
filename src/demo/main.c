@@ -110,8 +110,12 @@ void main_loop(void) {
         sync_frames_start();
         fb = get_framebuffer();
 
-        if (is_key_event(PREFIX_KEY_Q)) {
-            does_rotate ^= 1;
+        if (is_key_down(PREFIX_KEY_Q)) {
+            does_rotate = 0;
+        }
+
+        if (is_key_up(PREFIX_KEY_Q)) {
+            does_rotate = 1;
         }
 
         draw_sceene(fb);

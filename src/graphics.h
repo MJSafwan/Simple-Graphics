@@ -101,9 +101,8 @@ void mtx_multiply(Vector3 *a, Vector3 *b, Vector3 *res);
 Vector2 rotate2(Vector2 base, Vector2 off, float theta);
 
 /* User Input */
-int is_key_event(int keycode);
-int is_some_key_down();
-int is_some_key_up();
+int is_key_up(int keycode);
+int is_key_down(int keycode);
 void set_keydown_callback(keydown_callback_t keydown_callback);
 void set_keyup_callback(keyup_callback_t keyup_callback);
 Vector2 get_mouse_pos();

@@ -93,8 +93,11 @@ int window_should_close() {
     return core.window.window_should_close;
 }
 
-int is_key_event(int keycode) {
-    return core.events.keycode[keycode];
+int is_key_up(int keycode) {
+    return core.events.keycode[keycode] == PREFIX_KEYUP;
+}
+int is_key_down(int keycode) {
+    return core.events.keycode[keycode] == PREFIX_KEYDOWN;
 }
 
 rgba get_pixel(fb_t *fb, int x, int y) {
