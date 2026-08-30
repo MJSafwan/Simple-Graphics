@@ -52,7 +52,7 @@ void draw_sceene(fb_t *fb) {
     snprintf(sn_tmp, 1028, "fps %d", (int)(1/dt));
     display_text(fb, font, sn_tmp, (Vector2){0, 60}, BLACK, 32);
 
-    Vector2 mouse_pos = get_window_mouse_pos();
+    Vector2 mouse_pos = get_mouse_pos();
     snprintf(sn_tmp, 1028, "mouse = (%f, %f)", mouse_pos.x, mouse_pos.y);
     display_text(fb, font, sn_tmp, (Vector2){500, 300}, BLACK, 32);
 

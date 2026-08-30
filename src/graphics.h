@@ -106,8 +106,7 @@ int is_some_key_down();
 int is_some_key_up();
 void set_keydown_callback(keydown_callback_t keydown_callback);
 void set_keyup_callback(keyup_callback_t keyup_callback);
-Vector2 get_screen_mouse_pos();
-Vector2 get_window_mouse_pos();
+Vector2 get_mouse_pos();
 
 #define PREFIX_KEYUP 0
 #define PREFIX_KEYDOWN 1

@@ -331,10 +331,9 @@ void poll_events() {
             if (event == nil)
                 break;
             
-            NSPoint frame_org = core.window.handle->window.frame.origin;
-            core.window.screen_pos = (Vector2) {frame_org.x, frame_org.y};
-
             NSPoint mouse_pos = [NSEvent mouseLocation];
+            mouse_pos = [core.window.handle->window convertPointFromScreen: mouse_pos];
+            mouse_pos.y = core.window.height - mouse_pos.y;
             core.events.mouse_pos = (Vector2){mouse_pos.x, mouse_pos.y};
 
             if (event.type == NSEventTypeKeyDown) {

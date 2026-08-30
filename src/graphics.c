@@ -29,14 +29,14 @@ void graphics_logf(unsigned int level, const char *fmt, ...) {
 extern const char *platform_name;
 extern const char *font_lib_name;
 
-Vector2 get_screen_mouse_pos() {
-    return core.events.mouse_pos;
-}
+Vector2 get_mouse_pos() {
+    Vector2 mpos = core.events.mouse_pos;
+    if (mpos.x >= 0 && mpos.y >= 0) {
+        if (mpos.x <= core.window.width && mpos.y <= core.window.height) {
+            core.events.window_mouse_pos = mpos;
+        }
+    }
 
-Vector2 get_window_mouse_pos() {
-    Vector2 mpos = {fabs(core.events.mouse_pos.x - core.window.screen_pos.x), fabs(core.events.mouse_pos.y - core.window.screen_pos.y)};
-    
-    core.events.window_mouse_pos = mpos;
     return core.events.window_mouse_pos;
 }
 
