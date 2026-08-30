@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -9,14 +10,46 @@
 
 #define EMPTY (rgba){0, 0, 0, 0}
 
+
 core_t core = {0};
+static char *log_prefix[] = {
+    [LOG_INFO] = "[INFO]",
+    [LOG_DEBUG] = "[DEBUG]",
+};
+
+void graphics_logf(unsigned int level, const char *fmt, ...) {
+    assert(level < LOG_MAX);
+    printf("%s ", log_prefix[level]); 
+    va_list l;
+    va_start(l, fmt);
+    vprintf(fmt, l);
+    va_end(l);
+}
+
+extern const char *platform_name;
+extern const char *font_lib_name;
+
+Vector2 get_screen_mouse_pos() {
+    return core.events.mouse_pos;
+}
+
+Vector2 get_window_mouse_pos() {
+    Vector2 mpos = {fabs(core.events.mouse_pos.x - core.window.screen_pos.x), fabs(core.events.mouse_pos.y - core.window.screen_pos.y)};
+    
+    core.events.window_mouse_pos = mpos;
+    return core.events.window_mouse_pos;
+}
 
 void init_window(int width, int height, char *title) {
+    graphics_logf(LOG_INFO, "init_window(width=%d, height=%d, title='%s')\n", width, height, title);
     core.window.width = width;
     core.window.height = height;
     core.window.title = title;
+    graphics_logf(LOG_INFO, "Initializing platform [%s]\n", platform_name);
     init_platform();
+    graphics_logf(LOG_INFO, "Initializing font library [%s]\n", font_lib_name);
     init_font_library();
+    graphics_logf(LOG_INFO, "Done creating window.\n");
 }
 
 void close_window() {
@@ -58,6 +91,10 @@ fb_t *get_framebuffer() {
 
 int window_should_close() {
     return core.window.window_should_close;
+}
+
+int is_key_event(int keycode) {
+    return core.events.keycode[keycode];
 }
 
 rgba get_pixel(fb_t *fb, int x, int y) {

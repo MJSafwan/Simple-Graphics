@@ -34,8 +34,17 @@ extern core_t core;
 
 /* Internal Platform Implementation */
 
+static void make_window(void);
+
 @implementation app_delegate
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
+    graphics_logf(LOG_DEBUG, "make_window(): Creating window...\n");
+    make_window();
+    graphics_logf(LOG_DEBUG, "make_window(): Done\n");
+
+    // [NSApp activateIgnoringOtherApps: YES];
+    [core.window.handle->window makeKeyAndOrderFront:nil];
+    [core.window.handle->window makeFirstResponder:core.window.handle->view];
     [NSApp stop: nil];
 }
 
@@ -107,6 +116,13 @@ extern core_t core;
     return size;
 }
 
+- (void)windowDidLoad {
+    [super windowDidLoad];
+
+    graphics_logf(LOG_DEBUG, "Window loaded\n");
+}
+
+
 @end
 
 @implementation window_view 
@@ -127,26 +143,23 @@ extern core_t core;
 @end
 
 static void make_window(void) {
-    [NSApplication sharedApplication];
-    [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-    app_delegate *del = [[app_delegate alloc] init];
-    NSCAssert(del, @"Couldn't allocate an NSApplicationDelegate!\n");
-    [NSApp setDelegate: del];
-
-    core.window.handle->window = [[NSWindow alloc] initWithContentRect: NSMakeRect(0, 0, core.window.width, core.window.height)
-                                         styleMask: NSWindowStyleMaskTitled|
-                                                    NSWindowStyleMaskClosable|
-                                                    NSWindowStyleMaskResizable|
-                                                    NSWindowStyleMaskMiniaturizable
-                                         backing: NSBackingStoreBuffered
-                                         defer: NO]; 
+    core.window.handle->window = [[NSWindow alloc] 
+        initWithContentRect: NSMakeRect(0, 0, core.window.width, core.window.height)
+                  styleMask: NSWindowStyleMaskTitled|
+                             NSWindowStyleMaskClosable|
+                             NSWindowStyleMaskResizable|
+                             NSWindowStyleMaskMiniaturizable
+                    backing: NSBackingStoreBuffered
+                      defer: NO]; 
 
     NSCAssert(core.window.handle->window, @"Couldn't allocate NSWindow!\n");
     [core.window.handle->window setTitle: @(core.window.title)];
-    core.window.handle->window.opaque = true;
+    // core.window.handle->window.opaque = true;
+    
     core.window.handle->window.delegate = [[window_controller alloc] init];
-    NSCAssert(core.window.handle->window.delegate, @"Couldn't allocate NSWindowDelegate!\n");
-    core.window.handle->window.preservesContentDuringLiveResize = false;
+    NSCAssert(core.window.handle->window.delegate, @"Couldn't allocate NSWindowConstroler!\n");
+
+    // core.window.handle->window.preservesContentDuringLiveResize = false;
 
     /* todo: change current_screen when screen changes and resize framebuffer */
     core.current_screen->handle = [NSScreen mainScreen];
@@ -157,17 +170,91 @@ static void make_window(void) {
     core.window.handle->view = [[window_view alloc] initWithFrame: NSMakeRect(0, 0, core.window.width, core.window.height)];
     NSCAssert(core.window.handle->view, @"Couldn't allocate NSView!");
     [core.window.handle->window setContentView:core.window.handle->view];
+
+}
+/* https://boredzo.org/blog/archives/2007-05-22/virtual-key-codes */
+
+#define KEY_A 0
+#define KEY_S 1
+#define KEY_D 2
+#define KEY_F 3
+#define KEY_H 4
+#define KEY_G 5
+#define KEY_Z 6
+#define KEY_X 7
+#define KEY_C 8
+#define KEY_V 9
+#define KEY_B 11
+#define KEY_Q 12
+#define KEY_W 13
+#define KEY_E 14
+#define KEY_R 15
+#define KEY_Y 16
+#define KEY_T 17
+#define KEY_1 18
+#define KEY_2 19
+#define KEY_3 20
+#define KEY_4 21
+#define KEY_6 22
+#define KEY_5 23
+#define KEY_EQUALS 24
+#define KEY_9 25
+#define KEY_7 26
+#define KEY_MINUS 27
+#define KEY_8 28
+#define KEY_0 29
+#define KEY_RIGHTBRACKET 30
+#define KEY_O 31
+#define KEY_U 32
+#define KEY_LEFTBRACKET 33
+#define KEY_I 34
+#define KEY_P 35
+#define KEY_RETURN 36
+#define KEY_L 37
+#define KEY_J 38
+#define KEY_APOSTROPHE 39
+#define KEY_K 40
+#define KEY_SEMICOLON 41
+#define KEY_FRONTSLASH 42
+#define KEY_COMMA 43
+#define KEY_BACKSLASH 44
+#define KEY_N 45
+#define KEY_M 46
+#define KEY_PERIOD 47
+#define KEY_TAB 48
+#define KEY_BACKAPOSTROPHE 50
+#define KEY_DELETE 51
+#define KEY_ESCAPE 53
+#define KEY_COMMAND 55
+#define KEY_SHIFT 56
+#define KEY_CAPSLOCK 57
+#define KEY_OPTION 58
+#define KEY_CONTROL 59
+#define KEY_UP 126
+#define KEY_DOWN 125
+#define KEY_LEFT 123
+#define KEY_RIGHT 124
+
+static void register_keycodes(void) {
+#define X(a, b) core.events.keycode_translation[b] = a;
+    KEYCODEX
+#undef X
 }
 
 /* Exported Function */
 
+const char *platform_name = "Cocoa";
+
 void init_platform() {
+
     core.window.handle = malloc(sizeof(window_handle_t));
     NSCAssert(core.window.handle, @"Couldn't allocate window_handle_t!\n");
     core.current_screen = malloc(sizeof(screen_t));
     NSCAssert(core.current_screen, @"Couldn't allocate screen_t!\n");
     core.timer = malloc(sizeof(timer_t));
     NSCAssert(core.timer, @"Couldn't allocate timer_t!\n");
+
+    register_keycodes();
 
     core.window.handle->image = [[NSImage alloc]initWithSize: NSMakeSize(core.window.width, core.window.height)];
     NSCAssert(core.window.handle->image, @"Couldn't allocate NSImage!\n");
@@ -188,12 +275,14 @@ void init_platform() {
 
     core.window.handle->reps = reps;
     [core.window.handle->image addRepresentation: reps];
-    make_window();
-    [core.window.handle->window makeKeyAndOrderFront:nil];
 
-    [NSApp activateIgnoringOtherApps:YES];
-    if (![[NSRunningApplication currentApplication] isFinishedLaunching])
-        [NSApp run];
+    [NSApplication sharedApplication];
+    [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+    app_delegate *del = [[app_delegate alloc] init];
+    NSCAssert(del, @"Couldn't allocate an NSApplicationDelegate!\n");
+    [NSApp setDelegate: del];
+    [NSApp run];
+
 }
 
 
@@ -233,7 +322,6 @@ void update_framebuffer() {
 }
 
 void poll_events() {
-    memset(&core.events, 0, sizeof(core.events));
     @autoreleasepool {
         for (;;) {
             NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
@@ -242,13 +330,25 @@ void poll_events() {
                                                   dequeue:YES];
             if (event == nil)
                 break;
+            
+            NSPoint frame_org = core.window.handle->window.frame.origin;
+            core.window.screen_pos = (Vector2) {frame_org.x, frame_org.y};
 
-            core.events.type[event.type] = 1;
-            if (event.type == NSEventTypeKeyDown ||
-                event.type == NSEventTypeKeyUp) {
-                if (event.ARepeat)
-                    continue;
-                core.events.keycode[event.keyCode] = 1;
+            NSPoint mouse_pos = [NSEvent mouseLocation];
+            core.events.mouse_pos = (Vector2){mouse_pos.x, mouse_pos.y};
+
+            if (event.type == NSEventTypeKeyDown) {
+                int keycode_generic = core.events.keycode_translation[event.keyCode];
+                core.events.keycode[keycode_generic] = PREFIX_KEYDOWN;
+            }
+
+            if (event.type == NSEventTypeKeyUp) {
+                int keycode_generic = core.events.keycode_translation[event.keyCode];
+                core.events.keycode[keycode_generic] = PREFIX_KEYUP;
+            }
+
+            if (event.type == NSEventTypeMouseEntered) {
+                [core.window.handle->window makeKeyAndOrderFront:nil];
             }
 
             if (core.callbacks.keydown_callback && event.type == NSEventTypeKeyDown) {

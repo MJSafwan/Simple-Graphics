@@ -3,6 +3,11 @@
 #include <math.h>
 #include <time.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <sys/param.h>
+#include <string.h>
+#include <mach-o/dyld.h>
+#include <stdint.h>
 #include "graphics.h"
 
 fb_t bgfb = {0};
@@ -38,15 +43,24 @@ Vector2 ra = {0, 0};
 Vector2 rb = {1, 0};
 Vector2 rc = {0, 1};
 
+int does_rotate = 1;
+
 void draw_sceene(fb_t *fb) {
     float dt = get_deltatime();
     static char sn_tmp[1028] = "FPS N/A";
     fbcpy(get_framebuffer(), &bgfb, (Vector2){0, 0});
     snprintf(sn_tmp, 1028, "fps %d", (int)(1/dt));
     display_text(fb, font, sn_tmp, (Vector2){0, 60}, BLACK, 32);
-    ra = rotate2(ra,zv, 2*M_PI*dt);
-    rb = rotate2(rb,zv, 2*M_PI*dt);
-    rc = rotate2(rc,zv, 2*M_PI*dt);
+
+    Vector2 mouse_pos = get_window_mouse_pos();
+    snprintf(sn_tmp, 1028, "mouse = (%f, %f)", mouse_pos.x, mouse_pos.y);
+    display_text(fb, font, sn_tmp, (Vector2){500, 300}, BLACK, 32);
+
+    if (does_rotate) {
+        ra = rotate2(ra,zv, 2*M_PI*dt);
+        rb = rotate2(rb,zv, 2*M_PI*dt);
+        rc = rotate2(rc,zv, 2*M_PI*dt);
+    }
 
     Vector2 center = get_relative(&bgfb, (Vector2){0.5, 0.5});
     Vector2 scale = (Vector2){0.2, 0.2};
@@ -96,6 +110,10 @@ void main_loop(void) {
         sync_frames_start();
         fb = get_framebuffer();
 
+        if (is_key_event(PREFIX_KEY_Q)) {
+            does_rotate ^= 1;
+        }
+
         draw_sceene(fb);
 
         update_framebuffer();
@@ -107,7 +125,21 @@ void main_loop(void) {
 int main(void) {
     init_window(600, 600, "hello, World!");
 
-    if (chdir("assets") == -1) {
+    static char path_buff[MAXPATHLEN+1] = {0};
+    uint32_t path_size = MAXPATHLEN;
+    _NSGetExecutablePath(path_buff, &path_size);
+    path_size = strlen(path_buff);
+    for (int i = path_size; i >= 0; --i) {
+        if (path_buff[i] == '/') {
+            path_buff[i+1] = 0;
+            path_size = i+1;
+            break;
+        }
+    }
+
+    chdir(path_buff);
+
+    if (chdir("./assets") == -1) {
         perror("chdir: assets");
         return 1;
     }

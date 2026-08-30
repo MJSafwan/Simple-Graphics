@@ -10,10 +10,10 @@ typedef void *font_library_t;
 
 typedef struct {
     fb_t framebuffer;
-    
     window_handle_t *handle;
     int width;
     int height;
+    Vector2 screen_pos;
     int window_should_close;
     char *title;
 } window_t;
@@ -35,11 +35,13 @@ typedef struct {
     } callbacks;
 
     struct {
-        char type[255];
         char keycode[255];
+        char keycode_translation[255];
+        char mouse_in;
+        Vector2 mouse_pos;
+        Vector2 window_mouse_pos;
         /* todo: mouse buttons */
     } events;
 } core_t;
-
 
 #endif

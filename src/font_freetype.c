@@ -7,6 +7,7 @@
 #include "internals.h"
 
 extern core_t core;
+const char *font_lib_name = "FreeType";
 
 static void draw_bitmap(fb_t *fb, FT_Bitmap* bitmap, int x, int y, rgba color) {
     int x_max = x + bitmap->width;
