@@ -53,6 +53,11 @@ typedef void (*resize_callback_t)(int, int);
 typedef void (*finish_resize_callback_t)(int, int);
 typedef void (*keydown_callback_t)(void);
 typedef void (*keyup_callback_t)(void);
+typedef void (*rmouse_down_callback_t)(void);
+typedef void (*lmouse_down_callback_t)(void);
+typedef void (*rmouse_up_callback_t)(void);
+typedef void (*lmouse_up_callback_t)(void);
+
 /* todo: mouse callbacks */
 
 /* platform */
@@ -101,12 +106,21 @@ Vector2 rotate2(Vector2 base, Vector2 off, float theta);
 /* User Input */
 int is_key_up(int keycode);
 int is_key_down(int keycode);
+int is_mouse_down(int mouseb);
+int is_mouse_up(int mouseb);
 void set_keydown_callback(keydown_callback_t keydown_callback);
 void set_keyup_callback(keyup_callback_t keyup_callback);
+void set_rmouse_down_callback(rmouse_down_callback_t rmouse_down_callback);
+void set_lmouse_down_callback(lmouse_down_callback_t lmouse_down_callback);
+void set_rmouse_up_callback(rmouse_up_callback_t rmouse_up_callback);
+void set_lmouse_up_callback(lmouse_up_callback_t lmouse_up_callback);
 Vector2 get_mouse_pos();
 
 #define PREFIX_KEYUP 0
 #define PREFIX_KEYDOWN 1
+
+#define PREFIX_RM 0
+#define PREFIX_LM 1
 
 #define KEYCODEX \
     X(PREFIX_KEY_A, KEY_A) \

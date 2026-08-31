@@ -331,31 +331,65 @@ void poll_events() {
             if (event == nil)
                 break;
             
-            NSPoint mouse_pos = [NSEvent mouseLocation];
-            mouse_pos = [core.window.handle->window convertPointFromScreen: mouse_pos];
-            mouse_pos.y = core.window.height - mouse_pos.y;
-            core.events.mouse_pos = (Vector2){mouse_pos.x, mouse_pos.y};
 
-            if (event.type == NSEventTypeKeyDown) {
-                int keycode_generic = core.events.keycode_translation[event.keyCode];
-                core.events.keycode[keycode_generic] = PREFIX_KEYDOWN;
-            }
+            switch (event.type) {
+                case NSEventTypeKeyDown:
+                    if (core.callbacks.keydown_callback) {
+                        core.callbacks.keydown_callback();
+                    }
+                    int keycode_generic = core.events.keycode_translation[event.keyCode];
+                    core.events.keycode[keycode_generic] = PREFIX_KEYDOWN;
+                    break;
 
-            if (event.type == NSEventTypeKeyUp) {
-                int keycode_generic = core.events.keycode_translation[event.keyCode];
-                core.events.keycode[keycode_generic] = PREFIX_KEYUP;
-            }
+                case NSEventTypeLeftMouseDown:
+                    if (core.callbacks.lmouse_down_callback) {
+                        core.callbacks.lmouse_down_callback();
+                    }
+                    core.events.mouse_buttons[PREFIX_LM] = 1;
+                    break;
 
-            if (event.type == NSEventTypeMouseEntered) {
-                [core.window.handle->window makeKeyAndOrderFront:nil];
-            }
+                case NSEventTypeLeftMouseUp:
+                    if (core.callbacks.lmouse_up_callback) {
+                        core.callbacks.lmouse_up_callback();
+                    }
+                    core.events.mouse_buttons[PREFIX_RM] = 1;
+                    break;
 
-            if (core.callbacks.keydown_callback && event.type == NSEventTypeKeyDown) {
-                core.callbacks.keydown_callback();
-            }
+                case NSEventTypeRightMouseDown:
+                    if (core.callbacks.rmouse_down_callback) {
+                        core.callbacks.rmouse_down_callback();
+                    }
+                    core.events.mouse_buttons[PREFIX_LM] = 0;
+                    break;
 
-            if (core.callbacks.keyup_callback && event.type == NSEventTypeKeyUp) {
-                core.callbacks.keyup_callback();
+                case NSEventTypeRightMouseUp:
+                    if (core.callbacks.rmouse_up_callback) {
+                        core.callbacks.rmouse_up_callback();
+                    }
+                    core.events.mouse_buttons[PREFIX_RM] = 0;
+                    break;
+
+                case NSEventTypeKeyUp:
+                {
+                    if (core.callbacks.keyup_callback) {
+                        core.callbacks.keyup_callback();
+                    }
+
+                    int keycode_generic = core.events.keycode_translation[event.keyCode];
+                    core.events.keycode[keycode_generic] = PREFIX_KEYUP;
+                } break;
+                case NSEventTypeMouseEntered:
+                    [core.window.handle->window makeKeyAndOrderFront:nil];
+                    break;
+                case NSEventTypeMouseMoved:
+                {
+                    NSPoint mouse_pos = [NSEvent mouseLocation];
+                    mouse_pos = [core.window.handle->window convertPointFromScreen: mouse_pos];
+                    mouse_pos.y = core.window.height - mouse_pos.y;
+                    core.events.mouse_pos = (Vector2){mouse_pos.x, mouse_pos.y};
+                } break;
+                default:
+                    break;
             }
 
             [NSApp sendEvent:event];

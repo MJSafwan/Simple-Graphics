@@ -77,6 +77,19 @@ void set_keydown_callback(keydown_callback_t keydown_callback) {
 void set_keyup_callback(keyup_callback_t keyup_callback) {
     core.callbacks.keyup_callback = keyup_callback;
 }
+void set_rmouse_down_callback(rmouse_down_callback_t rmouse_down_callback) {
+    core.callbacks.rmouse_down_callback = rmouse_down_callback;
+}
+void set_lmouse_down_callback(lmouse_down_callback_t lmouse_down_callback) {
+    core.callbacks.lmouse_down_callback = lmouse_down_callback;
+}
+void set_rmouse_up_callback(rmouse_up_callback_t rmouse_up_callback) {
+    core.callbacks.rmouse_up_callback = rmouse_up_callback;
+
+}
+void set_lmouse_up_callback(lmouse_up_callback_t lmouse_up_callback) {
+    core.callbacks.lmouse_up_callback = lmouse_up_callback;
+}
 
 float get_deltatime() {
     return core.dt;

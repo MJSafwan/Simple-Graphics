@@ -31,13 +31,16 @@ typedef struct {
         finish_resize_callback_t finish_resize_callback;
         keydown_callback_t keydown_callback;
         keyup_callback_t keyup_callback;
-        /* todo: mouse callbacks */
+        rmouse_down_callback_t rmouse_down_callback;
+        lmouse_down_callback_t lmouse_down_callback;
+        rmouse_up_callback_t rmouse_up_callback;
+        lmouse_up_callback_t lmouse_up_callback;   
     } callbacks;
 
     struct {
         char keycode[255];
         char keycode_translation[255];
-        char mouse_in;
+        char mouse_buttons[16];
         Vector2 mouse_pos;
         Vector2 window_mouse_pos;
         /* todo: mouse buttons */
