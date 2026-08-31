@@ -111,11 +111,13 @@ void main_loop(void) {
         poll_events();
         fb = get_framebuffer();
 
-        if (is_key_down(GRAPHICS_KEY_Q)) {
+        if (is_key_pressed(GRAPHICS_KEY_Q)) {
+            printf("Q Pressed\n");
             does_rotate = 0;
         }
 
-        if (is_key_up(GRAPHICS_KEY_Q)) {
+        if (is_key_released(GRAPHICS_KEY_Q)) {
+            printf("Q Released\n");
             does_rotate = 1;
         }
 

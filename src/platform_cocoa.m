@@ -174,66 +174,66 @@ static void make_window(void) {
 }
 /* https://boredzo.org/blog/archives/2007-05-22/virtual-key-codes */
 
-#define KEY_A 0
-#define KEY_S 1
-#define KEY_D 2
-#define KEY_F 3
-#define KEY_H 4
-#define KEY_G 5
-#define KEY_Z 6
-#define KEY_X 7
-#define KEY_C 8
-#define KEY_V 9
-#define KEY_B 11
-#define KEY_Q 12
-#define KEY_W 13
-#define KEY_E 14
-#define KEY_R 15
-#define KEY_Y 16
-#define KEY_T 17
-#define KEY_1 18
-#define KEY_2 19
-#define KEY_3 20
-#define KEY_4 21
-#define KEY_6 22
-#define KEY_5 23
-#define KEY_EQUALS 24
-#define KEY_9 25
-#define KEY_7 26
-#define KEY_MINUS 27
-#define KEY_8 28
-#define KEY_0 29
-#define KEY_RIGHTBRACKET 30
-#define KEY_O 31
-#define KEY_U 32
-#define KEY_LEFTBRACKET 33
-#define KEY_I 34
-#define KEY_P 35
-#define KEY_RETURN 36
-#define KEY_L 37
-#define KEY_J 38
-#define KEY_APOSTROPHE 39
-#define KEY_K 40
-#define KEY_SEMICOLON 41
-#define KEY_FRONTSLASH 42
-#define KEY_COMMA 43
-#define KEY_BACKSLASH 44
-#define KEY_N 45
-#define KEY_M 46
-#define KEY_PERIOD 47
-#define KEY_TAB 48
-#define KEY_BACKAPOSTROPHE 50
-#define KEY_DELETE 51
-#define KEY_ESCAPE 53
-#define KEY_COMMAND 55
-#define KEY_SHIFT 56
-#define KEY_CAPSLOCK 57
-#define KEY_OPTION 58
-#define KEY_CONTROL 59
-#define KEY_UP 126
-#define KEY_DOWN 125
-#define KEY_LEFT 123
-#define KEY_RIGHT 124
+#define PLATFORM_KEY_A 0
+#define PLATFORM_KEY_S 1
+#define PLATFORM_KEY_D 2
+#define PLATFORM_KEY_F 3
+#define PLATFORM_KEY_H 4
+#define PLATFORM_KEY_G 5
+#define PLATFORM_KEY_Z 6
+#define PLATFORM_KEY_X 7
+#define PLATFORM_KEY_C 8
+#define PLATFORM_KEY_V 9
+#define PLATFORM_KEY_B 11
+#define PLATFORM_KEY_Q 12
+#define PLATFORM_KEY_W 13
+#define PLATFORM_KEY_E 14
+#define PLATFORM_KEY_R 15
+#define PLATFORM_KEY_Y 16
+#define PLATFORM_KEY_T 17
+#define PLATFORM_KEY_1 18
+#define PLATFORM_KEY_2 19
+#define PLATFORM_KEY_3 20
+#define PLATFORM_KEY_4 21
+#define PLATFORM_KEY_6 22
+#define PLATFORM_KEY_5 23
+#define PLATFORM_KEY_EQUALS 24
+#define PLATFORM_KEY_9 25
+#define PLATFORM_KEY_7 26
+#define PLATFORM_KEY_MINUS 27
+#define PLATFORM_KEY_8 28
+#define PLATFORM_KEY_0 29
+#define PLATFORM_KEY_RIGHTBRACKET 30
+#define PLATFORM_KEY_O 31
+#define PLATFORM_KEY_U 32
+#define PLATFORM_KEY_LEFTBRACKET 33
+#define PLATFORM_KEY_I 34
+#define PLATFORM_KEY_P 35
+#define PLATFORM_KEY_RETURN 36
+#define PLATFORM_KEY_L 37
+#define PLATFORM_KEY_J 38
+#define PLATFORM_KEY_APOSTROPHE 39
+#define PLATFORM_KEY_K 40
+#define PLATFORM_KEY_SEMICOLON 41
+#define PLATFORM_KEY_FRONTSLASH 42
+#define PLATFORM_KEY_COMMA 43
+#define PLATFORM_KEY_BACKSLASH 44
+#define PLATFORM_KEY_N 45
+#define PLATFORM_KEY_M 46
+#define PLATFORM_KEY_PERIOD 47
+#define PLATFORM_KEY_TAB 48
+#define PLATFORM_KEY_BACKAPOSTROPHE 50
+#define PLATFORM_KEY_DELETE 51
+#define PLATFORM_KEY_ESCAPE 53
+#define PLATFORM_KEY_COMMAND 55
+#define PLATFORM_KEY_SHIFT 56
+#define PLATFORM_KEY_CAPSLOCK 57
+#define PLATFORM_KEY_OPTION 58
+#define PLATFORM_KEY_CONTROL 59
+#define PLATFORM_KEY_UP 126
+#define PLATFORM_KEY_DOWN 125
+#define PLATFORM_KEY_LEFT 123
+#define PLATFORM_KEY_RIGHT 124
 
 static void register_keycodes(void) {
 #define X(a, b) core.events.keycode_translation[b] = a;
@@ -322,6 +322,21 @@ void update_framebuffer() {
 }
 
 void poll_events() {
+    for (int i = 0; i < GRAPHICS_KEY_LAST; ++i) {
+        if (is_key_pressed(i)) {
+            core.events.keycode[i] = GRAPHICS_KEYDOWN;
+            if (core.callbacks.keydown_callback) {
+                core.callbacks.keydown_callback();
+            }
+        }
+        if (is_key_released(i)) {
+            core.events.keycode[i] = GRAPHICS_KEYUP;
+            if (core.callbacks.keyup_callback) {
+                core.callbacks.keyup_callback();
+            }
+        }
+    }
+
     @autoreleasepool {
         for (;;) {
             NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
@@ -332,51 +347,63 @@ void poll_events() {
                 break;
             
 
+
             switch (event.type) {
                 case NSEventTypeKeyDown:
+                    if (event.ARepeat)
+                        break;
+                    int keycode_generic = core.events.keycode_translation[event.keyCode];
+                    int key_state = core.events.keycode[keycode_generic];
+                    core.events.keycode[keycode_generic] = GRAPHICS_KEYPRESS | GRAPHICS_KEYDOWN;
+                    if (core.callbacks.keypress_callback) {
+                        core.callbacks.keypress_callback(keycode_generic);
+                    }
                     if (core.callbacks.keydown_callback) {
                         core.callbacks.keydown_callback();
                     }
-                    int keycode_generic = core.events.keycode_translation[event.keyCode];
-                    core.events.keycode[keycode_generic] = GRAPHICS_KEYDOWN;
                     break;
 
                 case NSEventTypeLeftMouseDown:
+                    core.events.mouse_buttons[GRAPHICS_LM] = 1;
                     if (core.callbacks.lmouse_down_callback) {
                         core.callbacks.lmouse_down_callback();
                     }
-                    core.events.mouse_buttons[GRAPHICS_LM] = 1;
                     break;
 
                 case NSEventTypeLeftMouseUp:
+                    core.events.mouse_buttons[GRAPHICS_RM] = 1;
                     if (core.callbacks.lmouse_up_callback) {
                         core.callbacks.lmouse_up_callback();
                     }
-                    core.events.mouse_buttons[GRAPHICS_RM] = 1;
                     break;
 
                 case NSEventTypeRightMouseDown:
+                    core.events.mouse_buttons[GRAPHICS_LM] = 0;
                     if (core.callbacks.rmouse_down_callback) {
                         core.callbacks.rmouse_down_callback();
                     }
-                    core.events.mouse_buttons[GRAPHICS_LM] = 0;
                     break;
 
                 case NSEventTypeRightMouseUp:
+                    core.events.mouse_buttons[GRAPHICS_RM] = 0;
                     if (core.callbacks.rmouse_up_callback) {
                         core.callbacks.rmouse_up_callback();
                     }
-                    core.events.mouse_buttons[GRAPHICS_RM] = 0;
                     break;
 
                 case NSEventTypeKeyUp:
                 {
+                    if (event.ARepeat)
+                        break;
+
+                    int keycode_generic = core.events.keycode_translation[event.keyCode];
+                    core.events.keycode[keycode_generic] = GRAPHICS_KEYRELEASE | GRAPHICS_KEYUP;
+                    if (core.callbacks.keyrelease_callback) {
+                        core.callbacks.keyrelease_callback(keycode_generic);
+                    }
                     if (core.callbacks.keyup_callback) {
                         core.callbacks.keyup_callback();
                     }
-
-                    int keycode_generic = core.events.keycode_translation[event.keyCode];
-                    core.events.keycode[keycode_generic] = GRAPHICS_KEYUP;
                 } break;
                 case NSEventTypeMouseEntered:
                     [core.window.handle->window makeKeyAndOrderFront:nil];
@@ -395,7 +422,6 @@ void poll_events() {
                             }
                         }
                     }
-
                 } break;
                 default:
                     break;

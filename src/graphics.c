@@ -88,6 +88,13 @@ void set_lmouse_up_callback(lmouse_up_callback_t lmouse_up_callback) {
 void set_mouse_moved_callback(mouse_moved_callback_t mouse_moved_callback) {
     core.callbacks.mouse_moved_callback = mouse_moved_callback;
 }
+void set_keypress_callback(keypress_callback_t keypress_callback) {
+    core.callbacks.keypress_callback = keypress_callback;
+}
+
+void set_keyrelease_callback(keyrelease_callback_t keyrelease_callback) {
+    core.callbacks.keyrelease_callback = keyrelease_callback;
+}
 
 float get_deltatime() {
     return core.dt;
@@ -108,10 +115,22 @@ int window_should_close() {
 }
 
 int is_key_up(int keycode) {
-    return core.events.keycode[keycode] == GRAPHICS_KEYUP;
+    return (core.events.keycode[keycode] & GRAPHICS_KEYUP) != 0;
 }
 int is_key_down(int keycode) {
-    return core.events.keycode[keycode] == GRAPHICS_KEYDOWN;
+    return (core.events.keycode[keycode] & GRAPHICS_KEYDOWN) != 0;
+}
+
+int is_key_pressed(int keycode) {
+    return (core.events.keycode[keycode] & GRAPHICS_KEYPRESS) != 0;
+}
+
+int is_key_released(int keycode) {
+    return (core.events.keycode[keycode] & GRAPHICS_KEYRELEASE) != 0;
+}
+
+int get_key(int keycode) {
+    return core.events.keycode[keycode];
 }
 
 rgba get_pixel(fb_t *fb, int x, int y) {

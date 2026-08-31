@@ -56,7 +56,9 @@ typedef void (*rmouse_down_callback_t)(void);
 typedef void (*lmouse_down_callback_t)(void);
 typedef void (*rmouse_up_callback_t)(void);
 typedef void (*lmouse_up_callback_t)(void);
-typedef void (*mouse_moved_callback_t)(Vector2 mpos);
+typedef void (*mouse_moved_callback_t)(Vector2);
+typedef void (*keypress_callback_t)(int);
+typedef void (*keyrelease_callback_t)(int);
 
 /* platform */
 void init_platform();
@@ -104,10 +106,15 @@ Vector2 rotate2(Vector2 base, Vector2 off, float theta);
 /* User Input */
 int is_key_up(int keycode);
 int is_key_down(int keycode);
+int is_key_pressed(int keycode);
+int is_key_released(int keycode);
+int get_key(int keycode);
 int is_mouse_down(int mouseb);
 int is_mouse_up(int mouseb);
 void set_keydown_callback(keydown_callback_t keydown_callback);
 void set_keyup_callback(keyup_callback_t keyup_callback);
+void set_keypress_callback(keypress_callback_t keypress_callback);
+void set_keyrelease_callback(keyrelease_callback_t keyrelease_callback);
 void set_rmouse_down_callback(rmouse_down_callback_t rmouse_down_callback);
 void set_lmouse_down_callback(lmouse_down_callback_t lmouse_down_callback);
 void set_rmouse_up_callback(rmouse_up_callback_t rmouse_up_callback);
@@ -115,39 +122,41 @@ void set_lmouse_up_callback(lmouse_up_callback_t lmouse_up_callback);
 void set_mouse_moved_callback(mouse_moved_callback_t mouse_moved_callback);
 Vector2 get_mouse_pos();
 
-#define GRAPHICS_KEYUP 0
-#define GRAPHICS_KEYDOWN 1
+#define GRAPHICS_KEYUP (1 << 0)
+#define GRAPHICS_KEYDOWN (1 << 1)
+#define GRAPHICS_KEYPRESS (1 << 2)
+#define GRAPHICS_KEYRELEASE (1 << 3)
 
 #define GRAPHICS_RM 0
 #define GRAPHICS_LM 1
 
 #define KEYCODEX \
-    X(GRAPHICS_KEY_A, KEY_A) \
-    X(GRAPHICS_KEY_B, KEY_B) \
-    X(GRAPHICS_KEY_C, KEY_C) \
-    X(GRAPHICS_KEY_D, KEY_D) \
-    X(GRAPHICS_KEY_E, KEY_E) \
-    X(GRAPHICS_KEY_F, KEY_F) \
-    X(GRAPHICS_KEY_G, KEY_G) \
-    X(GRAPHICS_KEY_H, KEY_H) \
-    X(GRAPHICS_KEY_I, KEY_I) \
-    X(GRAPHICS_KEY_J, KEY_J) \
-    X(GRAPHICS_KEY_K, KEY_K) \
-    X(GRAPHICS_KEY_L, KEY_L) \
-    X(GRAPHICS_KEY_M, KEY_M) \
-    X(GRAPHICS_KEY_N, KEY_N) \
-    X(GRAPHICS_KEY_O, KEY_O) \
-    X(GRAPHICS_KEY_P, KEY_P) \
-    X(GRAPHICS_KEY_Q, KEY_Q) \
-    X(GRAPHICS_KEY_R, KEY_R) \
-    X(GRAPHICS_KEY_S, KEY_S) \
-    X(GRAPHICS_KEY_T, KEY_T) \
-    X(GRAPHICS_KEY_U, KEY_U) \
-    X(GRAPHICS_KEY_V, KEY_V) \
-    X(GRAPHICS_KEY_W, KEY_W) \
-    X(GRAPHICS_KEY_X, KEY_X) \
-    X(GRAPHICS_KEY_Y, KEY_Y) \
-    X(GRAPHICS_KEY_Z, KEY_Z)
+    X(GRAPHICS_KEY_A, PLATFORM_KEY_A) \
+    X(GRAPHICS_KEY_B, PLATFORM_KEY_B) \
+    X(GRAPHICS_KEY_C, PLATFORM_KEY_C) \
+    X(GRAPHICS_KEY_D, PLATFORM_KEY_D) \
+    X(GRAPHICS_KEY_E, PLATFORM_KEY_E) \
+    X(GRAPHICS_KEY_F, PLATFORM_KEY_F) \
+    X(GRAPHICS_KEY_G, PLATFORM_KEY_G) \
+    X(GRAPHICS_KEY_H, PLATFORM_KEY_H) \
+    X(GRAPHICS_KEY_I, PLATFORM_KEY_I) \
+    X(GRAPHICS_KEY_J, PLATFORM_KEY_J) \
+    X(GRAPHICS_KEY_K, PLATFORM_KEY_K) \
+    X(GRAPHICS_KEY_L, PLATFORM_KEY_L) \
+    X(GRAPHICS_KEY_M, PLATFORM_KEY_M) \
+    X(GRAPHICS_KEY_N, PLATFORM_KEY_N) \
+    X(GRAPHICS_KEY_O, PLATFORM_KEY_O) \
+    X(GRAPHICS_KEY_P, PLATFORM_KEY_P) \
+    X(GRAPHICS_KEY_Q, PLATFORM_KEY_Q) \
+    X(GRAPHICS_KEY_R, PLATFORM_KEY_R) \
+    X(GRAPHICS_KEY_S, PLATFORM_KEY_S) \
+    X(GRAPHICS_KEY_T, PLATFORM_KEY_T) \
+    X(GRAPHICS_KEY_U, PLATFORM_KEY_U) \
+    X(GRAPHICS_KEY_V, PLATFORM_KEY_V) \
+    X(GRAPHICS_KEY_W, PLATFORM_KEY_W) \
+    X(GRAPHICS_KEY_X, PLATFORM_KEY_X) \
+    X(GRAPHICS_KEY_Y, PLATFORM_KEY_Y) \
+    X(GRAPHICS_KEY_Z, PLATFORM_KEY_Z)
 
 #define X(a, b) a,
 enum {
