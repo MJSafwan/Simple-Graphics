@@ -57,6 +57,7 @@ typedef void (*rmouse_down_callback_t)(void);
 typedef void (*lmouse_down_callback_t)(void);
 typedef void (*rmouse_up_callback_t)(void);
 typedef void (*lmouse_up_callback_t)(void);
+typedef void (*mouse_moved_callback_t)(Vector2 mpos);
 
 /* todo: mouse callbacks */
 
@@ -114,6 +115,7 @@ void set_rmouse_down_callback(rmouse_down_callback_t rmouse_down_callback);
 void set_lmouse_down_callback(lmouse_down_callback_t lmouse_down_callback);
 void set_rmouse_up_callback(rmouse_up_callback_t rmouse_up_callback);
 void set_lmouse_up_callback(lmouse_up_callback_t lmouse_up_callback);
+void set_mouse_moved_callback(mouse_moved_callback_t mouse_moved_callback);
 Vector2 get_mouse_pos();
 
 #define PREFIX_KEYUP 0

@@ -35,6 +35,7 @@ typedef struct {
         lmouse_down_callback_t lmouse_down_callback;
         rmouse_up_callback_t rmouse_up_callback;
         lmouse_up_callback_t lmouse_up_callback;   
+        mouse_moved_callback_t mouse_moved_callback;
     } callbacks;
 
     struct {

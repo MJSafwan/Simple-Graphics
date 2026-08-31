@@ -386,7 +386,16 @@ void poll_events() {
                     NSPoint mouse_pos = [NSEvent mouseLocation];
                     mouse_pos = [core.window.handle->window convertPointFromScreen: mouse_pos];
                     mouse_pos.y = core.window.height - mouse_pos.y;
-                    core.events.mouse_pos = (Vector2){mouse_pos.x, mouse_pos.y};
+                    Vector2 mpos = (Vector2){mouse_pos.x, mouse_pos.y};
+                    if (mpos.x >= 0 && mpos.y >= 0) {
+                        if (mpos.x <= core.window.width && mpos.y <= core.window.height) {
+                            core.events.window_mouse_pos = mpos;
+                            if (core.callbacks.mouse_moved_callback) {
+                                core.callbacks.mouse_moved_callback(mpos);
+                            }
+                        }
+                    }
+
                 } break;
                 default:
                     break;

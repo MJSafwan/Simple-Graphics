@@ -31,11 +31,6 @@ extern const char *font_lib_name;
 
 Vector2 get_mouse_pos() {
     Vector2 mpos = core.events.mouse_pos;
-    if (mpos.x >= 0 && mpos.y >= 0) {
-        if (mpos.x <= core.window.width && mpos.y <= core.window.height) {
-            core.events.window_mouse_pos = mpos;
-        }
-    }
 
     return core.events.window_mouse_pos;
 }
@@ -89,6 +84,9 @@ void set_rmouse_up_callback(rmouse_up_callback_t rmouse_up_callback) {
 }
 void set_lmouse_up_callback(lmouse_up_callback_t lmouse_up_callback) {
     core.callbacks.lmouse_up_callback = lmouse_up_callback;
+}
+void set_mouse_moved_callback(mouse_moved_callback_t mouse_moved_callback) {
+    core.callbacks.mouse_moved_callback = mouse_moved_callback;
 }
 
 float get_deltatime() {
