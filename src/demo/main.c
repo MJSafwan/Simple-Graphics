@@ -108,20 +108,20 @@ void main_loop(void) {
     rgba rcolor = BLACK;
     while (!window_should_close()) {
         sync_frames_start();
+        poll_events();
         fb = get_framebuffer();
 
-        if (is_key_down(PREFIX_KEY_Q)) {
+        if (is_key_down(GRAPHICS_KEY_Q)) {
             does_rotate = 0;
         }
 
-        if (is_key_up(PREFIX_KEY_Q)) {
+        if (is_key_up(GRAPHICS_KEY_Q)) {
             does_rotate = 1;
         }
 
         draw_sceene(fb);
 
         update_framebuffer();
-        poll_events();
         sync_frames_end();
     }
 }

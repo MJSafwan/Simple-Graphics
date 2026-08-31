@@ -338,35 +338,35 @@ void poll_events() {
                         core.callbacks.keydown_callback();
                     }
                     int keycode_generic = core.events.keycode_translation[event.keyCode];
-                    core.events.keycode[keycode_generic] = PREFIX_KEYDOWN;
+                    core.events.keycode[keycode_generic] = GRAPHICS_KEYDOWN;
                     break;
 
                 case NSEventTypeLeftMouseDown:
                     if (core.callbacks.lmouse_down_callback) {
                         core.callbacks.lmouse_down_callback();
                     }
-                    core.events.mouse_buttons[PREFIX_LM] = 1;
+                    core.events.mouse_buttons[GRAPHICS_LM] = 1;
                     break;
 
                 case NSEventTypeLeftMouseUp:
                     if (core.callbacks.lmouse_up_callback) {
                         core.callbacks.lmouse_up_callback();
                     }
-                    core.events.mouse_buttons[PREFIX_RM] = 1;
+                    core.events.mouse_buttons[GRAPHICS_RM] = 1;
                     break;
 
                 case NSEventTypeRightMouseDown:
                     if (core.callbacks.rmouse_down_callback) {
                         core.callbacks.rmouse_down_callback();
                     }
-                    core.events.mouse_buttons[PREFIX_LM] = 0;
+                    core.events.mouse_buttons[GRAPHICS_LM] = 0;
                     break;
 
                 case NSEventTypeRightMouseUp:
                     if (core.callbacks.rmouse_up_callback) {
                         core.callbacks.rmouse_up_callback();
                     }
-                    core.events.mouse_buttons[PREFIX_RM] = 0;
+                    core.events.mouse_buttons[GRAPHICS_RM] = 0;
                     break;
 
                 case NSEventTypeKeyUp:
@@ -376,7 +376,7 @@ void poll_events() {
                     }
 
                     int keycode_generic = core.events.keycode_translation[event.keyCode];
-                    core.events.keycode[keycode_generic] = PREFIX_KEYUP;
+                    core.events.keycode[keycode_generic] = GRAPHICS_KEYUP;
                 } break;
                 case NSEventTypeMouseEntered:
                     [core.window.handle->window makeKeyAndOrderFront:nil];

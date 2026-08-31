@@ -29,7 +29,6 @@ typedef struct {
         int minx, maxx, miny, maxy;
     } dirty_box;
     void *userdata;
-    int zindex; /* todo: implement z-index */
     int width;
     int height;
 } fb_t;
@@ -58,8 +57,6 @@ typedef void (*lmouse_down_callback_t)(void);
 typedef void (*rmouse_up_callback_t)(void);
 typedef void (*lmouse_up_callback_t)(void);
 typedef void (*mouse_moved_callback_t)(Vector2 mpos);
-
-/* todo: mouse callbacks */
 
 /* platform */
 void init_platform();
@@ -118,44 +115,44 @@ void set_lmouse_up_callback(lmouse_up_callback_t lmouse_up_callback);
 void set_mouse_moved_callback(mouse_moved_callback_t mouse_moved_callback);
 Vector2 get_mouse_pos();
 
-#define PREFIX_KEYUP 0
-#define PREFIX_KEYDOWN 1
+#define GRAPHICS_KEYUP 0
+#define GRAPHICS_KEYDOWN 1
 
-#define PREFIX_RM 0
-#define PREFIX_LM 1
+#define GRAPHICS_RM 0
+#define GRAPHICS_LM 1
 
 #define KEYCODEX \
-    X(PREFIX_KEY_A, KEY_A) \
-    X(PREFIX_KEY_B, KEY_B) \
-    X(PREFIX_KEY_C, KEY_C) \
-    X(PREFIX_KEY_D, KEY_D) \
-    X(PREFIX_KEY_E, KEY_E) \
-    X(PREFIX_KEY_F, KEY_F) \
-    X(PREFIX_KEY_G, KEY_G) \
-    X(PREFIX_KEY_H, KEY_H) \
-    X(PREFIX_KEY_I, KEY_I) \
-    X(PREFIX_KEY_J, KEY_J) \
-    X(PREFIX_KEY_K, KEY_K) \
-    X(PREFIX_KEY_L, KEY_L) \
-    X(PREFIX_KEY_M, KEY_M) \
-    X(PREFIX_KEY_N, KEY_N) \
-    X(PREFIX_KEY_O, KEY_O) \
-    X(PREFIX_KEY_P, KEY_P) \
-    X(PREFIX_KEY_Q, KEY_Q) \
-    X(PREFIX_KEY_R, KEY_R) \
-    X(PREFIX_KEY_S, KEY_S) \
-    X(PREFIX_KEY_T, KEY_T) \
-    X(PREFIX_KEY_U, KEY_U) \
-    X(PREFIX_KEY_V, KEY_V) \
-    X(PREFIX_KEY_W, KEY_W) \
-    X(PREFIX_KEY_X, KEY_X) \
-    X(PREFIX_KEY_Y, KEY_Y) \
-    X(PREFIX_KEY_Z, KEY_Z)
+    X(GRAPHICS_KEY_A, KEY_A) \
+    X(GRAPHICS_KEY_B, KEY_B) \
+    X(GRAPHICS_KEY_C, KEY_C) \
+    X(GRAPHICS_KEY_D, KEY_D) \
+    X(GRAPHICS_KEY_E, KEY_E) \
+    X(GRAPHICS_KEY_F, KEY_F) \
+    X(GRAPHICS_KEY_G, KEY_G) \
+    X(GRAPHICS_KEY_H, KEY_H) \
+    X(GRAPHICS_KEY_I, KEY_I) \
+    X(GRAPHICS_KEY_J, KEY_J) \
+    X(GRAPHICS_KEY_K, KEY_K) \
+    X(GRAPHICS_KEY_L, KEY_L) \
+    X(GRAPHICS_KEY_M, KEY_M) \
+    X(GRAPHICS_KEY_N, KEY_N) \
+    X(GRAPHICS_KEY_O, KEY_O) \
+    X(GRAPHICS_KEY_P, KEY_P) \
+    X(GRAPHICS_KEY_Q, KEY_Q) \
+    X(GRAPHICS_KEY_R, KEY_R) \
+    X(GRAPHICS_KEY_S, KEY_S) \
+    X(GRAPHICS_KEY_T, KEY_T) \
+    X(GRAPHICS_KEY_U, KEY_U) \
+    X(GRAPHICS_KEY_V, KEY_V) \
+    X(GRAPHICS_KEY_W, KEY_W) \
+    X(GRAPHICS_KEY_X, KEY_X) \
+    X(GRAPHICS_KEY_Y, KEY_Y) \
+    X(GRAPHICS_KEY_Z, KEY_Z)
 
 #define X(a, b) a,
 enum {
    KEYCODEX 
-   PREFIX_KEY_LAST
+   GRAPHICS_KEY_LAST
 };
 #undef X
 
