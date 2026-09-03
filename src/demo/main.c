@@ -89,7 +89,6 @@ void draw_sceene(fb_t *fb) {
 
     draw_texture_mtx(fb, image, (Vector2){center.x-image.width*scale.x*0.5, center.y-image.height*scale.y*0.5}, scale, mtx);
 
-    // draw_triangle(fb, (Vector2){400, 300}, (Vector2){550,325}, (Vector2){550, 350}, BLUE);
 }
 
 void on_resize(int w, int h) {
@@ -97,9 +96,6 @@ void on_resize(int w, int h) {
     framebuffer_free(&bgfb);
     make_bgfb(w, h);
     draw_sceene(fb);
-}
-
-void on_finish_resize(int w, int h) {
 }
 
 void main_loop(void) {
@@ -111,13 +107,9 @@ void main_loop(void) {
         poll_events();
         fb = get_framebuffer();
 
-        if (is_key_pressed(GRAPHICS_KEY_Q)) {
-            printf("Q Pressed\n");
+        if (is_key_down(GRAPHICS_KEY_Q)) {
             does_rotate = 0;
-        }
-
-        if (is_key_released(GRAPHICS_KEY_Q)) {
-            printf("Q Released\n");
+        } else if (is_key_up(GRAPHICS_KEY_Q)) {
             does_rotate = 1;
         }
 
@@ -160,7 +152,6 @@ int main(void) {
     }
 
     set_resize_callback(on_resize);
-    set_finish_resize_callback(on_finish_resize);
 
     main_loop();
 

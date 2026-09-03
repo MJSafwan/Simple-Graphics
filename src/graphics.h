@@ -127,8 +127,8 @@ Vector2 get_mouse_pos();
 #define GRAPHICS_KEYPRESS (1 << 2)
 #define GRAPHICS_KEYRELEASE (1 << 3)
 
-#define GRAPHICS_RM 0
-#define GRAPHICS_LM 1
+#define GRAPHICS_RMB 0
+#define GRAPHICS_LMB 1
 
 #define KEYCODEX \
     X(GRAPHICS_KEY_A, PLATFORM_KEY_A) \

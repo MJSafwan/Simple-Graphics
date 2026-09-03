@@ -44,6 +44,7 @@ void init_window(int width, int height, char *title) {
     core.window.height = height;
     core.window.title = title;
     graphics_logf(LOG_INFO, "Initializing platform [%s]\n", platform_name);
+    memset(core.events.keycode, GRAPHICS_KEYUP, sizeof(core.events.keycode));
     init_platform();
     graphics_logf(LOG_INFO, "Initializing font library [%s]\n", font_lib_name);
     init_font_library();
@@ -51,7 +52,6 @@ void init_window(int width, int height, char *title) {
 }
 
 void close_window() {
-    /* todo: uninitialize font library */
     framebuffer_free(&core.window.framebuffer);
     uninit_platform();
     uninit_font_library();

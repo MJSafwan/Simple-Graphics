@@ -364,28 +364,28 @@ void poll_events() {
                     break;
 
                 case NSEventTypeLeftMouseDown:
-                    core.events.mouse_buttons[GRAPHICS_LM] = 1;
+                    core.events.mouse_buttons[GRAPHICS_LMB] = 1;
                     if (core.callbacks.lmouse_down_callback) {
                         core.callbacks.lmouse_down_callback();
                     }
                     break;
 
                 case NSEventTypeLeftMouseUp:
-                    core.events.mouse_buttons[GRAPHICS_RM] = 1;
+                    core.events.mouse_buttons[GRAPHICS_RMB] = 1;
                     if (core.callbacks.lmouse_up_callback) {
                         core.callbacks.lmouse_up_callback();
                     }
                     break;
 
                 case NSEventTypeRightMouseDown:
-                    core.events.mouse_buttons[GRAPHICS_LM] = 0;
+                    core.events.mouse_buttons[GRAPHICS_LMB] = 0;
                     if (core.callbacks.rmouse_down_callback) {
                         core.callbacks.rmouse_down_callback();
                     }
                     break;
 
                 case NSEventTypeRightMouseUp:
-                    core.events.mouse_buttons[GRAPHICS_RM] = 0;
+                    core.events.mouse_buttons[GRAPHICS_RMB] = 0;
                     if (core.callbacks.rmouse_up_callback) {
                         core.callbacks.rmouse_up_callback();
                     }
