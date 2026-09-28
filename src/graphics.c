@@ -26,27 +26,29 @@ void graphics_logf(unsigned int level, const char *fmt, ...) {
     va_end(l);
 }
 
-extern const char *platform_name;
-extern const char *font_lib_name;
-
 Vector2 get_mouse_pos() {
-    Vector2 mpos = core.events.mouse_pos;
-
     return core.events.window_mouse_pos;
 }
 
-void init_font_library();
-void uninit_font_library();
+int is_mouse_down(int button) {
+    return core.events.mouse_buttons[button] == 1;
+}
+
+int is_mouse_up(int button) {
+    return core.events.mouse_buttons[button] == 0;
+}
+
+extern void init_font_library();
+extern void uninit_font_library();
+extern void init_platform(int width, int height, char *title);
+extern void uninit_platform();
 
 void init_window(int width, int height, char *title) {
     graphics_logf(LOG_INFO, "init_window(width=%d, height=%d, title='%s')\n", width, height, title);
-    core.window.width = width;
-    core.window.height = height;
-    core.window.title = title;
-    graphics_logf(LOG_INFO, "Initializing platform [%s]\n", platform_name);
+    graphics_logf(LOG_INFO, "Initializing platform [%s]\n", core.platform_info.rendering_backend);
     memset(core.events.keycode, GRAPHICS_KEYUP, sizeof(core.events.keycode));
-    init_platform();
-    graphics_logf(LOG_INFO, "Initializing font library [%s]\n", font_lib_name);
+    init_platform(width, height, title);
+    graphics_logf(LOG_INFO, "Initializing font library [%s]\n", core.platform_info.font_backend);
     init_font_library();
     graphics_logf(LOG_INFO, "Done creating window.\n");
 }
@@ -215,11 +217,11 @@ void draw_line(fb_t *fb, Vector2 initial, Vector2 final, int thick, rgba color) 
     }
 }
 
-float sign(Vector2 p1, Vector2 p2, Vector2 p3) {
+static float sign(Vector2 p1, Vector2 p2, Vector2 p3) {
     return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
 }
 
-int PointInTriangle(Vector2 pt, Vector2 v1, Vector2 v2, Vector2 v3) {
+static int PointInTriangle(Vector2 pt, Vector2 v1, Vector2 v2, Vector2 v3) {
     float d1 = sign(pt, v1, v2);
     float d2 = sign(pt, v2, v3);
     float d3 = sign(pt, v3, v1);
@@ -249,21 +251,21 @@ void draw_rect(fb_t *fb, Vector2 pos, Vector2 dim, rgba color) {
     }
 }
 
-Vector2 vector2_max3x(Vector2 a, Vector2 b, Vector2 c) {
+static Vector2 vector2_max3x(Vector2 a, Vector2 b, Vector2 c) {
     Vector2 max = a; 
     if (b.x > max.x) max = b;
     if (c.x > max.x) max = c;
     return max;
 }
 
-Vector2 vector2_max3y(Vector2 a, Vector2 b, Vector2 c) {
+static Vector2 vector2_max3y(Vector2 a, Vector2 b, Vector2 c) {
     Vector2 max = a; 
     if (b.y > max.y) max = b;
     if (c.y > max.y) max = c;
     return max;
 }
 
-Vector2 vector2_min3x(Vector2 a, Vector2 b, Vector2 c) {
+static Vector2 vector2_min3x(Vector2 a, Vector2 b, Vector2 c) {
     Vector2 min = a; 
     if (b.x < min.x) min = b;
     if (c.x < min.x) min = c;
@@ -301,10 +303,11 @@ void draw_rectv(fb_t *fb, Vector2 a, Vector2 b, Vector2 c, Vector2 d, rgba color
 
 
 int load_texture(char *filename, texture *t) {
-    t->data = stbi_load(filename, &t->width, &t->height, &t->channels, 3);
+    t->data = stbi_load(filename, &t->width, &t->height, &t->channels, 0);
     if (!t->data) {
         return 0;
     }
+    t->data_size = (Vector2){t->width, t->height};
     return 1;
 }
 
@@ -312,23 +315,54 @@ typedef struct {
     unsigned char r, g, b;
 } rgb;
 
-void draw_texture(fb_t *fb, texture t, Vector2 pos, Vector2 scale) {
+void draw_texture_opaque(fb_t *fb, texture t, Vector2 pos, Vector2 scale) {
     rgb *data = (rgb *)t.data;
     assert(t.channels == 3);
     int i = 0;
     assert(scale.x > 0 && scale.y > 0);
-    for (int y = 0; y < t.height * scale.y; ++y) {
-        for (int x = 0; x < t.width * scale.x; ++x) {
+    for (int y = t.data_offset.y*scale.y; y < (t.data_offset.y + t.height) * scale.y; ++y) {
+        for (int x = t.data_offset.x*scale.x; x < (t.data_offset.x + t.width) * scale.x; ++x) {
             int tx = (x / scale.x);
             int ty = (y /scale.y);
-            int i = tx + ty * t.width;
+            int i = (tx + ty * t.data_size.x);
             rgba c = {0};
             c.r = data[i].r;
             c.g = data[i].g;
             c.b = data[i].b;
             c.a = 255;
-            set_pixel(fb, x+pos.x, y+pos.y, c);
+            set_pixel(fb, x+pos.x-t.data_offset.x*scale.x, y+pos.y-t.data_offset.y*scale.y, c);
         }
+    }
+}
+
+void draw_texture_transparent(fb_t *fb, texture t, Vector2 pos, Vector2 scale) {
+    rgba *data = (rgba *)t.data;
+    int i = 0;
+    assert(scale.x > 0 && scale.y > 0);
+    for (int y = t.data_offset.y*scale.y; y < (t.data_offset.y + t.height) * scale.y; ++y) {
+        for (int x = t.data_offset.x*scale.x; x < (t.data_offset.x + t.width) * scale.x; ++x) {
+            int tx = (x / scale.x);
+            int ty = (y /scale.y);
+            int i = (tx + ty * t.data_size.x);
+            int screenx = x+pos.x-t.data_offset.x*scale.x;
+            int screeny = y+pos.y-t.data_offset.y*scale.y;
+            rgba c = {0};
+            rgba bg = get_pixel(fb, screenx, screeny);
+            float val = data[i].a / 255.0f;
+            c.r = bg.r + (data[i].r - bg.r)*val;
+            c.g = bg.g + (data[i].g - bg.g)*val;
+            c.b = bg.b + (data[i].b - bg.b)*val;
+            c.a = 255;
+            set_pixel(fb, screenx, screeny, c);
+        }
+    }
+}
+
+void draw_texture(fb_t *fb, texture t, Vector2 pos, Vector2 scale) {
+    if (t.channels == 3) {
+        draw_texture_opaque(fb, t, pos, scale);
+    } else {
+        draw_texture_transparent(fb, t, pos, scale);
     }
 }
 
@@ -337,37 +371,62 @@ void draw_texture_mtx(fb_t *fb, texture t, Vector2 pos, Vector2 scale, Vector3 m
     assert(t.channels == 3);
     int i = 0;
     assert(scale.x > 0 && scale.y > 0);
-    for (float y = 0; y < t.height * scale.y; y+=0.5) {
-        for (float x = 0; x < t.width * scale.x; x+=0.5) {
+    for (float y = t.data_offset.y*scale.y; y < (t.data_offset.y + t.height) * scale.y; y+=0.5) {
+        for (float x = t.data_offset.x*scale.x; x < (t.data_offset.x + t.width) * scale.x; x+=0.5) {
             int tx = (x / scale.x);
             int ty = (y /scale.y);
 
             int screenx = mtx[0].x * x + mtx[0].y * y + mtx[0].z;
             int screeny = mtx[1].x * x + mtx[1].y * y + mtx[1].z;
 
-            int i = tx + ty * t.width;
+            int i = tx + ty * t.data_size.x;
             rgba c = {0};
             c.r = data[i].r;
             c.g = data[i].g;
             c.b = data[i].b;
             c.a = 255;
-            set_pixel(fb, screenx+pos.x, screeny+pos.y, c);
+            set_pixel(fb, screenx+pos.x-t.data_offset.x*scale.x, screeny+pos.y-t.data_offset.y*scale.y, c);
         }
     }
 }
 
+int init_from_atlas(char *filename, int entry_width, int entry_height, texture_list *l) {
+    texture t = {0};
+    if (!load_texture(filename, &t)) {
+        return 0;
+    }
+
+    int hori_count = t.width / entry_width;
+    int vert_count = t.height / entry_height;
+
+    l->count = hori_count * vert_count;
+    l->items = malloc(l->count * sizeof(texture));
+    for (int y = 0; y < vert_count; ++y) {
+        for (int x = 0; x < hori_count; ++x) {
+            int i = x + hori_count * y;
+            l->items[i].data = t.data;
+            l->items[i].width = entry_width;
+            l->items[i].height = entry_height;
+            l->items[i].channels = t.channels;
+            l->items[i].data_offset = (Vector2){x*entry_width, y*entry_height};
+            l->items[i].data_size = t.data_size;
+        }
+    }
+    return 1;
+}
+
 void mtx_multiply(Vector3 *a, Vector3 *b, Vector3 *res) {
-    res[0].x = a[0].x*b[0].x + a[0].y*b[1].x+a[0].z*b[2].x;
-    res[0].y = a[0].x*b[0].y + a[0].y*b[1].y+a[0].z*b[2].y;
-    res[0].z = a[0].x*b[0].z + a[0].y*b[1].z+a[0].z*b[2].z;
-
-    res[1].x = a[1].x*b[0].x + a[1].y*b[1].x+a[1].z*b[2].x;
-    res[1].y = a[1].x*b[0].y + a[1].y*b[1].y+a[1].z*b[2].y;
-    res[1].z = a[1].x*b[0].z + a[1].y*b[1].z+a[1].z*b[2].z;
-
-    res[2].x = a[2].x*b[0].x + a[2].y*b[1].x+a[2].z*b[2].x;
-    res[2].y = a[2].x*b[0].y + a[2].y*b[1].y+a[2].z*b[2].y;
-    res[2].z = a[2].x*b[0].z + a[2].y*b[1].z+a[2].z*b[2].z;
+    res[0].x = a[0].x * b[0].x + a[0].y * b[1].x + a[0].z * b[2].x;
+    res[0].y = a[0].x * b[0].y + a[0].y * b[1].y + a[0].z * b[2].y;
+    res[0].z = a[0].x * b[0].z + a[0].y * b[1].z + a[0].z * b[2].z;
+                                                            
+    res[1].x = a[1].x * b[0].x + a[1].y * b[1].x + a[1].z * b[2].x;
+    res[1].y = a[1].x * b[0].y + a[1].y * b[1].y + a[1].z * b[2].y;
+    res[1].z = a[1].x * b[0].z + a[1].y * b[1].z + a[1].z * b[2].z;
+                                                            
+    res[2].x = a[2].x * b[0].x + a[2].y * b[1].x + a[2].z * b[2].x;
+    res[2].y = a[2].x * b[0].y + a[2].y * b[1].y + a[2].z * b[2].y;
+    res[2].z = a[2].x * b[0].z + a[2].y * b[1].z + a[2].z * b[2].z;
 }
 
 Vector2 rotate2(Vector2 base, Vector2 off, float theta) {

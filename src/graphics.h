@@ -2,11 +2,14 @@
 #ifndef GRAPHICS_H_
 #define GRAPHICS_H_
 
-#define RED (rgba){255, 100, 100, 255}
+#define RED (rgba){255, 150, 150, 255}
 #define WHITE (rgba){255, 255, 255, 255}
 #define BLACK (rgba){0, 0, 0, 255}
-#define GREEN (rgba){100, 255, 100, 255}
-#define BLUE (rgba){100, 100, 255, 255}
+#define GREEN (rgba){150, 255, 150, 255}
+#define BLUE (rgba){150, 150, 255, 255}
+#define MAGENTA (rgba){255, 150, 255, 255}
+#define CYAN (rgba){150, 255, 255, 255}
+#define YELLOW (rgba){255, 255, 150, 255}
 
 typedef struct {
     unsigned char r, g, b, a;
@@ -38,7 +41,14 @@ typedef struct {
     int width;
     int height;
     int channels;
+    Vector2 data_offset;
+    Vector2 data_size;
 } texture;
+
+typedef struct {
+    texture *items;
+    size_t count;
+} texture_list;
 
 enum {
     LOG_INFO,
@@ -61,8 +71,6 @@ typedef void (*keypress_callback_t)(int);
 typedef void (*keyrelease_callback_t)(int);
 
 /* platform */
-void init_platform();
-void uninit_platform();
 void update_framebuffer();
 void poll_events();
 void sync_frames_start();
@@ -93,6 +101,7 @@ void draw_texture(fb_t *fb, texture t, Vector2 pos, Vector2 scale);
 void draw_rectv(fb_t *fb, Vector2 a, Vector2 b, Vector2 c, Vector2 d, rgba color);
 void fbcpy(fb_t *dst, fb_t *src, Vector2 off);
 void draw_texture_mtx(fb_t *fb, texture t, Vector2 pos, Vector2 scale, Vector3 mtx[3]);
+int init_from_atlas(char *filename, int entry_width, int entry_height, texture_list *out);
 
 /* Fonts */
 int load_font(char *filename, font_t *ctx);

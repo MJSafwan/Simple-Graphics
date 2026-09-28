@@ -118,7 +118,10 @@ void sync_frames_end() {
     core.dt = (etn-stn)/(1000000000.0);
 }
 
-void init_platform() {
+void init_platform(int width, int height, char *title) {
+    core.window.width = width;
+    core.window.height = height;
+    core.window.title = title;
     initscr();
     cbreak();
     noecho();

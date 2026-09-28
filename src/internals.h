@@ -27,6 +27,11 @@ typedef struct {
     float dt;
 
     struct {
+        char *rendering_backend;
+        char *font_backend;
+    } platform_info;
+
+    struct {
         resize_callback_t resize_callback;
         finish_resize_callback_t finish_resize_callback;
         keydown_callback_t keydown_callback;
@@ -46,7 +51,6 @@ typedef struct {
         char mouse_buttons[16];
         Vector2 mouse_pos;
         Vector2 window_mouse_pos;
-        /* todo: mouse buttons */
     } events;
 } core_t;
 

@@ -42,6 +42,26 @@ static void make_window(void);
     make_window();
     graphics_logf(LOG_DEBUG, "make_window(): Done\n");
 
+    core.window.handle->image = [[NSImage alloc]initWithSize: NSMakeSize(core.window.width, core.window.height)];
+    NSCAssert(core.window.handle->image, @"Couldn't allocate NSImage!\n");
+
+    NSBitmapImageRep *reps = [[NSBitmapImageRep alloc]
+        initWithBitmapDataPlanes: NULL
+                      pixelsWide: core.window.width
+                      pixelsHigh: core.window.height
+                   bitsPerSample: sizeof(char) * 8
+                 samplesPerPixel: sizeof(rgba)
+                        hasAlpha: YES
+                        isPlanar: NO
+                  colorSpaceName: NSDeviceRGBColorSpace
+                     bytesPerRow: 0
+                    bitsPerPixel: 0
+    ];
+    NSCAssert(reps, @"Couldn't allocate NSBitmapImageRep!\n");
+
+    core.window.handle->reps = reps;
+    [core.window.handle->image addRepresentation: reps];
+
     // [NSApp activateIgnoringOtherApps: YES];
     [core.window.handle->window makeKeyAndOrderFront:nil];
     [core.window.handle->window makeFirstResponder:core.window.handle->view];
@@ -153,6 +173,8 @@ static void make_window(void) {
                       defer: NO]; 
 
     NSCAssert(core.window.handle->window, @"Couldn't allocate NSWindow!\n");
+    core.window.width = core.window.handle->window.frame.size.width;
+    core.window.height = core.window.handle->window.frame.size.height;
     [core.window.handle->window setTitle: @(core.window.title)];
     // core.window.handle->window.opaque = true;
     
@@ -243,9 +265,12 @@ static void register_keycodes(void) {
 
 /* Exported Function */
 
-const char *platform_name = "Cocoa";
+void init_platform(int width, int height, char *title) {
 
-void init_platform() {
+    core.window.width = width;
+    core.window.height = height;
+    core.window.title = title;
+    core.platform_info.rendering_backend = "Cocoa (Software)";
 
     core.window.handle = malloc(sizeof(window_handle_t));
     NSCAssert(core.window.handle, @"Couldn't allocate window_handle_t!\n");
@@ -255,28 +280,8 @@ void init_platform() {
     NSCAssert(core.timer, @"Couldn't allocate timer_t!\n");
 
     register_keycodes();
-
-    core.window.handle->image = [[NSImage alloc]initWithSize: NSMakeSize(core.window.width, core.window.height)];
-    NSCAssert(core.window.handle->image, @"Couldn't allocate NSImage!\n");
-
-    NSBitmapImageRep *reps = [[NSBitmapImageRep alloc]
-        initWithBitmapDataPlanes: NULL
-                      pixelsWide: core.window.width
-                      pixelsHigh: core.window.height
-                   bitsPerSample: sizeof(char) * 8
-                 samplesPerPixel: sizeof(rgba)
-                        hasAlpha: YES
-                        isPlanar: NO
-                  colorSpaceName: NSDeviceRGBColorSpace
-                     bytesPerRow: 0
-                    bitsPerPixel: 0
-    ];
-    NSCAssert(reps, @"Couldn't allocate NSBitmapImageRep!\n");
-
-    core.window.handle->reps = reps;
-    [core.window.handle->image addRepresentation: reps];
-
     [NSApplication sharedApplication];
+
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
     app_delegate *del = [[app_delegate alloc] init];
     NSCAssert(del, @"Couldn't allocate an NSApplicationDelegate!\n");
@@ -348,6 +353,18 @@ void poll_events() {
             
 
 
+            NSPoint mouse_pos = [NSEvent mouseLocation];
+            mouse_pos = [core.window.handle->window convertPointFromScreen: mouse_pos];
+            Vector2 mpos = (Vector2){mouse_pos.x, core.window.height - mouse_pos.y};
+            if (mpos.x >= 0 && mpos.y >= 0) {
+                if (mpos.x <= core.window.width && mpos.y <= core.window.height) {
+                    core.events.window_mouse_pos = mpos;
+                    if (core.callbacks.mouse_moved_callback) {
+                        core.callbacks.mouse_moved_callback(mpos);
+                    }
+                }
+            }
+
             switch (event.type) {
                 case NSEventTypeKeyDown:
                     if (event.ARepeat)
@@ -371,14 +388,14 @@ void poll_events() {
                     break;
 
                 case NSEventTypeLeftMouseUp:
-                    core.events.mouse_buttons[GRAPHICS_RMB] = 1;
+                    core.events.mouse_buttons[GRAPHICS_LMB] = 0;
                     if (core.callbacks.lmouse_up_callback) {
                         core.callbacks.lmouse_up_callback();
                     }
                     break;
 
                 case NSEventTypeRightMouseDown:
-                    core.events.mouse_buttons[GRAPHICS_LMB] = 0;
+                    core.events.mouse_buttons[GRAPHICS_RMB] = 1;
                     if (core.callbacks.rmouse_down_callback) {
                         core.callbacks.rmouse_down_callback();
                     }
@@ -408,21 +425,6 @@ void poll_events() {
                 case NSEventTypeMouseEntered:
                     [core.window.handle->window makeKeyAndOrderFront:nil];
                     break;
-                case NSEventTypeMouseMoved:
-                {
-                    NSPoint mouse_pos = [NSEvent mouseLocation];
-                    mouse_pos = [core.window.handle->window convertPointFromScreen: mouse_pos];
-                    mouse_pos.y = core.window.height - mouse_pos.y;
-                    Vector2 mpos = (Vector2){mouse_pos.x, mouse_pos.y};
-                    if (mpos.x >= 0 && mpos.y >= 0) {
-                        if (mpos.x <= core.window.width && mpos.y <= core.window.height) {
-                            core.events.window_mouse_pos = mpos;
-                            if (core.callbacks.mouse_moved_callback) {
-                                core.callbacks.mouse_moved_callback(mpos);
-                            }
-                        }
-                    }
-                } break;
                 default:
                     break;
             }

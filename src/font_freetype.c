@@ -53,6 +53,7 @@ void display_text(fb_t *fb, font_t *ctx, char *text, Vector2 pos, rgba color, in
 
 void init_font_library() {
     core.font_library = malloc(sizeof(FT_Library));
+    core.platform_info.font_backend = "FreeType";
     FT_Init_FreeType(core.font_library);
 }
 

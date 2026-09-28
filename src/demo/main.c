@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
 #include <time.h>
@@ -13,21 +14,21 @@
 fb_t bgfb = {0};
 font_t font;
 texture image = {0};
+texture fanart_image = {0};
 
 Vector2 get_relative(fb_t *fb, Vector2 v) {
     return (Vector2){v.x*fb->width, v.y*fb->height};
 }
 
-void make_bgfb(int w, int h) {
-    bgfb = make_framebuffer(w, h);
+void make_bgfb(int w, int h, float phase) {
     for (int y = 0; y < bgfb.height; ++y) {
         for (int x = 0; x < bgfb.width; ++x) {
             double theta = 2.0 * M_PI * (x / (double)bgfb.width);
             double phi = 2.0 * M_PI * (y / (double)bgfb.height);
 
-            double a = sin(phi) * cos(theta);
-            double b = sin(phi) * sin(theta);
-            double c = cos(phi);
+            double a = sin(phi+phase) * cos(theta+phase);
+            double b = sin(phi+phase) * sin(theta+phase);
+            double c = cos(phi+phase);
             rgba color = {0};
             color.r = ((a+1)/2)*255;
             color.g = ((b+1)/2)*255;
@@ -44,75 +45,83 @@ Vector2 rb = {1, 0};
 Vector2 rc = {0, 1};
 
 int does_rotate = 1;
+float counter = 0;
+float map_counter = 0;
+float sparkle_counter = 0;
+float phase_counter = 0;
+texture_list atlas = {0};
+texture_list waving_atlas = {0};
+texture_list pat_atlas = {0};
+texture_list sparkle_atlas = {0};
+rgba color_map[] = {RED, CYAN, BLUE, MAGENTA, GREEN, YELLOW};
+size_t color_map_len = sizeof(color_map)/sizeof(rgba);
+
+Vector2 get_center(texture t, Vector2 abs_center, Vector2 scale) {
+    return (Vector2){abs_center.x - (t.width*scale.x)/2, abs_center.y - (t.height*scale.y)/2};
+}
 
 void draw_sceene(fb_t *fb) {
     float dt = get_deltatime();
-    static char sn_tmp[1028] = "FPS N/A";
-    fbcpy(get_framebuffer(), &bgfb, (Vector2){0, 0});
-    snprintf(sn_tmp, 1028, "fps %d", (int)(1/dt));
-    display_text(fb, font, sn_tmp, (Vector2){0, 60}, BLACK, 32);
+    make_bgfb(fb->width, fb->height, phase_counter);
+    fbcpy(fb, &bgfb, (Vector2){0, 0});
+    counter += dt*6;
+    map_counter += dt*3;
+    phase_counter += dt;
+    sparkle_counter += dt*6;
+    if (counter >= atlas.count) {
+        counter = 0;
+    }
+    if (sparkle_counter >= sparkle_atlas.count) {
+        sparkle_counter = 0;
+    }
 
-    Vector2 mouse_pos = get_mouse_pos();
-    snprintf(sn_tmp, 1028, "mouse = (%f, %f)", mouse_pos.x, mouse_pos.y);
-    display_text(fb, font, sn_tmp, (Vector2){500, 300}, BLACK, 32);
-
-    if (does_rotate) {
-        ra = rotate2(ra,zv, 2*M_PI*dt);
-        rb = rotate2(rb,zv, 2*M_PI*dt);
-        rc = rotate2(rc,zv, 2*M_PI*dt);
+    if (map_counter >= color_map_len) {
+        map_counter = 0;
     }
 
     Vector2 center = get_relative(&bgfb, (Vector2){0.5, 0.5});
-    Vector2 scale = (Vector2){0.2, 0.2};
+    Vector2 scale = (Vector2){0.5, 0.5};
 
-    Vector3 rot[3] = {
-        (Vector3){rb.x - ra.x, rb.y - ra.y, 0},
-        (Vector3){rc.x - ra.x, rc.y - ra.y, 0},
-        (Vector3){0, 0, 0}
-    };
+    /* todo: function to get width of text */
+    /* todo: add shaders function: rendering pipeline */
 
-    Vector3 trans1[3] = {
-        (Vector3){1, 0 ,image.width*scale.x*0.5},
-        (Vector3){0, 1 ,image.height*scale.y*0.5},
-        (Vector3){0, 0, 1}
-    };
+    display_text(fb, font, "Good Morning!", (Vector2){center.x-150, 100}, color_map[(int)map_counter], 32);
+    texture ral_frame = atlas.items[(int)counter];
+    texture waving_frame = waving_atlas.items[(int)counter];
+    texture pat_frame = pat_atlas.items[(int)counter];
+    Vector2 waving_scale = {2.5, 2.5};
+    Vector2 pat_scale = {0.35, 0.35};
+    draw_texture(fb, ral_frame, get_center(ral_frame, center, scale), scale);
+    draw_texture(fb, waving_frame, get_center(waving_frame, (Vector2){100, 500}, waving_scale), waving_scale);
+    draw_texture(fb, pat_frame, get_center(pat_frame, (Vector2){650, 200}, pat_scale), pat_scale);
 
-    Vector3 trans2[3] = {
-        (Vector3){1, 0 ,-image.width*scale.x*0.5},
-        (Vector3){0, 1, -image.height*scale.y*0.5},
-        (Vector3){0, 0, 1}
-    };
+    Vector2 image_scale = {0.35, 0.35};
+    draw_texture(fb, image, get_center(image, (Vector2){650, 500}, image_scale), image_scale);
+    Vector2 fanart_scale = {0.25, 0.25};
+    draw_texture(fb, fanart_image, (Vector2){25, 50}, fanart_scale);
 
-    Vector3 mtx1[3]; 
-    Vector3 mtx[3]; 
-    mtx_multiply(rot, trans2,  mtx);
-
-    draw_texture_mtx(fb, image, (Vector2){center.x-image.width*scale.x*0.5, center.y-image.height*scale.y*0.5}, scale, mtx);
-
+    texture sparkle_frame = sparkle_atlas.items[(int)sparkle_counter];
+    Vector2 sparkle_scale = {2.5, 2.5};
+    draw_texture(fb, sparkle_frame, get_center(sparkle_frame, center, sparkle_scale), sparkle_scale);
 }
 
 void on_resize(int w, int h) {
     fb_t *fb = get_framebuffer();
     framebuffer_free(&bgfb);
-    make_bgfb(w, h);
+    bgfb = make_framebuffer(w, h);
+    make_bgfb(w, h, 0);
     draw_sceene(fb);
 }
 
 void main_loop(void) {
     fb_t *fb = get_framebuffer();
-    make_bgfb(fb->width, fb->height);
+    bgfb = make_framebuffer(fb->width, fb->height);
+    make_bgfb(fb->width, fb->height, 0);
     rgba rcolor = BLACK;
     while (!window_should_close()) {
         sync_frames_start();
         poll_events();
         fb = get_framebuffer();
-
-        if (is_key_down(GRAPHICS_KEY_Q)) {
-            does_rotate = 0;
-        } else if (is_key_up(GRAPHICS_KEY_Q)) {
-            does_rotate = 1;
-        }
-
         draw_sceene(fb);
 
         update_framebuffer();
@@ -121,7 +130,7 @@ void main_loop(void) {
 }
 
 int main(void) {
-    init_window(600, 600, "hello, World!");
+    init_window(800, 600, "hello, World!");
 
     static char path_buff[MAXPATHLEN+1] = {0};
     uint32_t path_size = MAXPATHLEN;
@@ -139,17 +148,45 @@ int main(void) {
 
     if (chdir("./assets") == -1) {
         perror("chdir: assets");
-        return 1;
+        exit(1);
     }
 
     if (!load_font("OpenDyslexic-Regular.otf", &font)) {
         printf("Couldn't load base font!\n");
-        return 1;
+        exit(1);
     }
 
-    if (!load_texture("test.jpg", &image)) {
+    if (!load_texture("ral.png", &image)) {
         printf("Couldn't load image!\n");
+        exit(1);
     }
+
+    if (!load_texture("Ralsei.jpg", &fanart_image)) {
+        printf("Couldn't load image!\n");
+        exit(1);
+    }
+
+    if (!init_from_atlas("ralsei_sheet.png", 580, 800, &atlas)) {
+        graphics_logf(LOG_INFO, "Couldn't find asset 'ralsei_sheet.png'!\n");
+        exit(1);
+    }
+    atlas.count--;
+
+    if (!init_from_atlas("ral_waving.png", 111, 162, &waving_atlas)) {
+        graphics_logf(LOG_INFO, "Couldn't find asset 'ral_waving.png'!\n");
+        exit(1);
+    }
+    waving_atlas.count = atlas.count;
+
+    if (!init_from_atlas("ral_pat.png", 498, 498, &pat_atlas)) {
+        graphics_logf(LOG_INFO, "Couldn't find asset 'ral_pat.png'!\n");
+        exit(1);
+    }
+    if (!init_from_atlas("sparkle.png", 350, 350, &sparkle_atlas)) {
+        graphics_logf(LOG_INFO, "Couldn't find asset 'ral_pat.png'!\n");
+        exit(1);
+    }
+    pat_atlas.count = atlas.count;
 
     set_resize_callback(on_resize);
 
