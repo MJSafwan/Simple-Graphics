@@ -10,6 +10,18 @@
 
 #define EMPTY (rgba){0, 0, 0, 0}
 
+#define DA_APPEND(da, val) \
+    if ((da)->count >= (da)->capacity) { \
+        if ((da)->capacity == 0) { \
+            (da)->capacity = 16; \
+        } else { \
+            (da)->capacity *= 2; \
+        } \
+        (da)->items = realloc((da)->items, (da)->capacity * sizeof(val)); \
+        assert((da)->items); \
+    } \
+    (da)->items[(da)->count++] = val
+
 
 core_t core = {0};
 static char *log_prefix[] = {
@@ -43,6 +55,11 @@ extern void uninit_font_library();
 extern void init_platform(int width, int height, char *title);
 extern void uninit_platform();
 
+static void init_objects() {
+    core.objs.capacity = 16; 
+    core.objs.buckets = malloc(sizeof(object_bucket) * core.objs.capacity); 
+}
+
 void init_window(int width, int height, char *title) {
     graphics_logf(LOG_INFO, "init_window(width=%d, height=%d, title='%s')\n", width, height, title);
     graphics_logf(LOG_INFO, "Initializing platform [%s]\n", core.platform_info.rendering_backend);
@@ -50,6 +67,7 @@ void init_window(int width, int height, char *title) {
     init_platform(width, height, title);
     graphics_logf(LOG_INFO, "Initializing font library [%s]\n", core.platform_info.font_backend);
     init_font_library();
+    init_objects();
     graphics_logf(LOG_INFO, "Done creating window.\n");
 }
 
@@ -432,3 +450,116 @@ void mtx_multiply(Vector3 *a, Vector3 *b, Vector3 *res) {
 Vector2 rotate2(Vector2 base, Vector2 off, float theta) {
     return (Vector2){((base.x-off.x)*cos(theta)-(base.y-off.y)*sin(theta))+off.x, ((base.x-off.x)*sin(theta)+(base.y-off.y)*cos(theta))+off.y};
 }
+
+Vector2 get_relative(fb_t *fb, Vector2 v) {
+    return (Vector2){v.x*fb->width, v.y*fb->height};
+}
+
+static uint64_t obj_hash(char *name) {
+    uint64_t sum = 0;
+    for (size_t i = 0; name[i] != 0; ++i) {
+        sum += (i+1)*name[i];
+    }
+    return sum % (core.objs.capacity);
+}
+
+static int exists_in_obj_map(uint64_t hash, char *name, size_t *idx_if_exists) {
+    object_bucket bucket = core.objs.buckets[hash];
+    for (size_t i = 0; i < bucket.count; ++i) {
+        obj_t entry = bucket.items[i];
+        if (strcmp(name, entry.name) == 0) {
+            *idx_if_exists = i;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int fill_in_obj(obj_t *obj, char *name, int kind, void *handle) {
+    obj->kind = kind;
+    obj->name = name;
+    if (kind == OBJ_IMAGE) {
+        obj->image.handle = (texture *) handle;
+        obj->image.pos = (Vector2) {0, 0};
+        obj->image.scale = (Vector2) {1, 1};
+        return 1;
+    }
+
+    if (kind == OBJ_ATLAS) {
+        obj->atlas.handle = (texture_list *) handle;
+        obj->atlas.pos = (Vector2) {0, 0};
+        obj->atlas.scale = (Vector2) {1, 1};
+        return 1;
+    }
+
+    /* todo: implement counter */
+    return 0;
+}
+
+static int replace_obj(uint64_t hash, obj_t obj, size_t idx) {
+    core.objs.buckets[hash].items[idx] = obj;
+    return 1;
+}
+
+static int put_in_obj_map(char *name, int kind, void *handle) {
+    uint64_t hash = obj_hash(name);
+    obj_t obj = {0};
+    if (!fill_in_obj(&obj, name, kind, handle)) {
+        return 0;
+    }
+
+    size_t idx = 0;
+    if (exists_in_obj_map(hash, name, &idx)) {
+        return replace_obj(hash, obj, idx);
+    } else {
+        DA_APPEND(&core.objs.buckets[hash], obj);
+        return 1;
+    }
+}
+
+obj_t *get_obj(char *name) {
+    size_t idx = 0;
+    uint64_t hash = obj_hash(name);
+    int exists = exists_in_obj_map(hash, name, &idx);
+    if (!exists) {
+        return NULL;
+    } else {
+        return &core.objs.buckets[hash].items[idx];
+    }
+}
+
+obj_t *register_obj(char *name, int kind, void *handle) {
+   put_in_obj_map(name, kind, handle);
+   return get_obj(name);
+}
+
+void update_atlas(obj_t *atlas, float dt) {
+    assert(atlas->kind = OBJ_ATLAS);
+    texture_list *tlist = atlas->atlas.handle;
+    atlas->atlas.counter += (float) atlas->atlas.fps * dt;
+    if (atlas->atlas.counter >= tlist->count) {
+        atlas->atlas.counter = 0;
+    }
+}
+
+texture *get_atlas_frame(obj_t *atlas) {
+    assert(atlas->kind = OBJ_ATLAS);
+    texture_list *tlist = atlas->atlas.handle;
+    return &tlist->items[(int) atlas->atlas.counter];
+}
+
+int draw_image(fb_t *fb, obj_t *image) {
+    if (image->kind != OBJ_IMAGE)
+        return 0;
+    draw_texture(fb, *image->image.handle, image->image.pos, image->image.scale);
+    return 1;
+}
+
+int draw_atlas(fb_t *fb, obj_t *atlas, float dt) {
+    if (atlas->kind != OBJ_ATLAS)
+        return 0;
+    draw_texture(fb, *get_atlas_frame(atlas), atlas->atlas.pos, atlas->atlas.scale);
+    update_atlas(atlas, dt);
+    return 1;
+}
+

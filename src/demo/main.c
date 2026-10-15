@@ -13,12 +13,6 @@
 
 fb_t bgfb = {0};
 font_t font;
-texture image = {0};
-texture fanart_image = {0};
-
-Vector2 get_relative(fb_t *fb, Vector2 v) {
-    return (Vector2){v.x*fb->width, v.y*fb->height};
-}
 
 void make_bgfb(int w, int h, float phase) {
     for (int y = 0; y < bgfb.height; ++y) {
@@ -39,70 +33,23 @@ void make_bgfb(int w, int h, float phase) {
     }
 }
 
-Vector2 zv = {0, 0};
-Vector2 ra = {0, 0};
-Vector2 rb = {1, 0};
-Vector2 rc = {0, 1};
-
-int does_rotate = 1;
-float counter = 0;
-float map_counter = 0;
-float sparkle_counter = 0;
-float phase_counter = 0;
-texture_list atlas = {0};
-texture_list waving_atlas = {0};
-texture_list pat_atlas = {0};
-texture_list sparkle_atlas = {0};
-rgba color_map[] = {RED, CYAN, BLUE, MAGENTA, GREEN, YELLOW};
-size_t color_map_len = sizeof(color_map)/sizeof(rgba);
-
-Vector2 get_center(texture t, Vector2 abs_center, Vector2 scale) {
-    return (Vector2){abs_center.x - (t.width*scale.x)/2, abs_center.y - (t.height*scale.y)/2};
-}
-
 void draw_sceene(fb_t *fb) {
     float dt = get_deltatime();
-    make_bgfb(fb->width, fb->height, phase_counter);
+    make_bgfb(fb->width, fb->height, 0);
     fbcpy(fb, &bgfb, (Vector2){0, 0});
-    counter += dt*6;
-    map_counter += dt*3;
-    phase_counter += dt;
-    sparkle_counter += dt*6;
-    if (counter >= atlas.count) {
-        counter = 0;
-    }
-    if (sparkle_counter >= sparkle_atlas.count) {
-        sparkle_counter = 0;
-    }
 
-    if (map_counter >= color_map_len) {
-        map_counter = 0;
-    }
+    Vector2 center = get_relative(fb, (Vector2){0.5, 0.5});
 
-    Vector2 center = get_relative(&bgfb, (Vector2){0.5, 0.5});
-    Vector2 scale = (Vector2){0.5, 0.5};
+    obj_t *ral_sheet = get_obj("RalSheet");
+    ral_sheet->atlas.scale = (Vector2) {0.5, 0.5};
+    ral_sheet->atlas.pos = center;
 
-    /* todo: function to get width of text */
-    /* todo: add shaders function: rendering pipeline */
+    obj_t *ral = get_obj("Ral");
+    ral->image.pos = (Vector2) {25, 50};
+    ral->image.scale = (Vector2) {0.25, 0.25};
 
-    display_text(fb, font, "Good Morning!", (Vector2){center.x-150, 100}, color_map[(int)map_counter], 32);
-    texture ral_frame = atlas.items[(int)counter];
-    texture waving_frame = waving_atlas.items[(int)counter];
-    texture pat_frame = pat_atlas.items[(int)counter];
-    Vector2 waving_scale = {2.5, 2.5};
-    Vector2 pat_scale = {0.35, 0.35};
-    draw_texture(fb, ral_frame, get_center(ral_frame, center, scale), scale);
-    draw_texture(fb, waving_frame, get_center(waving_frame, (Vector2){100, 500}, waving_scale), waving_scale);
-    draw_texture(fb, pat_frame, get_center(pat_frame, (Vector2){650, 200}, pat_scale), pat_scale);
-
-    Vector2 image_scale = {0.35, 0.35};
-    draw_texture(fb, image, get_center(image, (Vector2){650, 500}, image_scale), image_scale);
-    Vector2 fanart_scale = {0.25, 0.25};
-    draw_texture(fb, fanart_image, (Vector2){25, 50}, fanart_scale);
-
-    texture sparkle_frame = sparkle_atlas.items[(int)sparkle_counter];
-    Vector2 sparkle_scale = {2.5, 2.5};
-    draw_texture(fb, sparkle_frame, get_center(sparkle_frame, center, sparkle_scale), sparkle_scale);
+    draw_atlas(fb, ral_sheet, dt);
+    draw_image(fb, ral);
 }
 
 void on_resize(int w, int h) {
@@ -126,6 +73,20 @@ void main_loop(void) {
 
         update_framebuffer();
         sync_frames_end();
+    }
+}
+
+void try_to_load_texture(char *name, texture *handle) {
+    if (!load_texture(name, handle)) {
+        printf("Couldn't load image '%s'!\n", name);
+        exit(1);
+    }
+}
+
+void try_to_load_atlas(char *name, int x, int y, texture_list *handle) {
+    if (!init_from_atlas(name, x, y, handle)) {
+        graphics_logf(LOG_INFO, "Couldn't find asset '%s'!\n", name);
+        exit(1);
     }
 }
 
@@ -156,37 +117,17 @@ int main(void) {
         exit(1);
     }
 
-    if (!load_texture("ral.png", &image)) {
-        printf("Couldn't load image!\n");
-        exit(1);
-    }
+    texture_list atlas = {0};
+    texture fanart_image = {0};
 
-    if (!load_texture("Ralsei.jpg", &fanart_image)) {
-        printf("Couldn't load image!\n");
-        exit(1);
-    }
-
-    if (!init_from_atlas("ralsei_sheet.png", 580, 800, &atlas)) {
-        graphics_logf(LOG_INFO, "Couldn't find asset 'ralsei_sheet.png'!\n");
-        exit(1);
-    }
+    try_to_load_texture("Ralsei.jpg", &fanart_image);
+    try_to_load_atlas("ralsei_sheet.png", 580, 800, &atlas);
     atlas.count--;
 
-    if (!init_from_atlas("ral_waving.png", 111, 162, &waving_atlas)) {
-        graphics_logf(LOG_INFO, "Couldn't find asset 'ral_waving.png'!\n");
-        exit(1);
-    }
-    waving_atlas.count = atlas.count;
+    obj_t *ral = register_obj("Ral", OBJ_IMAGE, &fanart_image);
 
-    if (!init_from_atlas("ral_pat.png", 498, 498, &pat_atlas)) {
-        graphics_logf(LOG_INFO, "Couldn't find asset 'ral_pat.png'!\n");
-        exit(1);
-    }
-    if (!init_from_atlas("sparkle.png", 350, 350, &sparkle_atlas)) {
-        graphics_logf(LOG_INFO, "Couldn't find asset 'ral_pat.png'!\n");
-        exit(1);
-    }
-    pat_atlas.count = atlas.count;
+    obj_t *ral_sheet = register_obj("RalSheet", OBJ_ATLAS, &atlas);
+    ral_sheet->atlas.fps = 6;
 
     set_resize_callback(on_resize);
 

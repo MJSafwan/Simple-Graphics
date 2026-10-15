@@ -56,6 +56,40 @@ enum {
     LOG_MAX
 };
 
+#define OBJ_IMAGE 0
+#define OBJ_ATLAS 1
+
+typedef struct {
+    int kind;
+    char *name;
+    union {
+        struct {
+            texture *handle;
+            Vector2 scale;
+            Vector2 pos;
+        } image;
+        struct {
+            texture_list *handle;
+            Vector2 scale;
+            Vector2 pos;
+            int fps;
+            float counter;
+        } atlas; 
+    };
+} obj_t;
+
+typedef struct {
+    obj_t *items;
+    size_t count;
+    size_t capacity;   
+} object_bucket;
+
+typedef struct {
+    object_bucket *buckets;
+    size_t count; 
+    size_t capacity;
+} objects_map;
+
 void graphics_logf(unsigned int level, const char *fmt, ...);
 
 typedef void (*resize_callback_t)(int, int);
@@ -103,6 +137,15 @@ void fbcpy(fb_t *dst, fb_t *src, Vector2 off);
 void draw_texture_mtx(fb_t *fb, texture t, Vector2 pos, Vector2 scale, Vector3 mtx[3]);
 int init_from_atlas(char *filename, int entry_width, int entry_height, texture_list *out);
 
+/* Objects */
+
+obj_t *register_obj(char *name, int kind, void *handle);
+obj_t *get_obj(char *name);
+void update_atlas(obj_t *atlas, float dt);
+texture *get_atlas_frame(obj_t *atlas);
+int draw_image(fb_t *fb, obj_t *image);
+int draw_atlas(fb_t *fb, obj_t *atlas, float dt);
+
 /* Fonts */
 int load_font(char *filename, font_t *ctx);
 void display_text(fb_t *fb, font_t *ctx, char *text, Vector2 pos, rgba color, int pixel_size);
@@ -111,6 +154,7 @@ void font_free(font_t *ctx);
 /* Vector math */
 void mtx_multiply(Vector3 *a, Vector3 *b, Vector3 *res);
 Vector2 rotate2(Vector2 base, Vector2 off, float theta);
+Vector2 get_relative(fb_t *fb, Vector2 v);
 
 /* User Input */
 int is_key_up(int keycode);

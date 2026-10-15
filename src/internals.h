@@ -25,6 +25,7 @@ typedef struct {
 
     font_library_t font_library;
     float dt;
+    objects_map objs;
 
     struct {
         char *rendering_backend;
